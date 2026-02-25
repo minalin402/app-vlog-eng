@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { Button } from './components/ui/button'
+import { Input } from './components/ui/input'
 import { AlertCircle, CheckCircle, Check } from 'lucide-react'
 
 export default function AccountActivation() {

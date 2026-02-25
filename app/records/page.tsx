@@ -1,8 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { PageHeader, type TabKey } from "@/components/page-header"
-import { VideoCard } from "@/components/video-card"
+import { PageHeader, type TabKey } from "./components/page-header"
+import { VideoCard } from "./components/video-card"
 import {
   getRecentVideos,
   getCompletedVideos,
