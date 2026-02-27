@@ -162,7 +162,7 @@ export function FilterBar({
     [videos]
   )
   const topicOptions = useMemo(
-    () => Array.from(new Set(videos.map((v) => v.topic))).sort(),
+    () => Array.from(new Set(videos.flatMap((v) => v.topics))).sort(),
     [videos]
   )
 
