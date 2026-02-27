@@ -5,7 +5,7 @@ import Link from "next/link"
 import { Star, Heart } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { useState, useCallback } from "react"
-import { useToast } from "@/components/ui/use-toast"
+import { toast } from "sonner"
 import type { Video } from "@/lib/mock-videos"
 
 // ─── 模拟后端 API：更新收藏状态 ───────────────────────────────────────────────
@@ -33,7 +33,6 @@ interface VideoCardProps {
 }
 
 export function VideoCard({ video }: VideoCardProps) {
-  const { toast } = useToast()
   const [isFavorite, setIsFavorite] = useState(video.isFavorite)
   const [isPending, setIsPending] = useState(false)
 
@@ -67,9 +66,7 @@ export function VideoCard({ video }: VideoCardProps) {
       } catch (err) {
         // 请求失败 → 回滚
         setIsFavorite(prevFavorite)
-        toast({
-          variant: "destructive",
-          title: "操作失败",
+        toast.error("操作失败", {
           description: err instanceof Error ? err.message : "收藏状态更新失败，请重试",
         })
       } finally {
