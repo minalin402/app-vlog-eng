@@ -1,4 +1,14 @@
+"use client"
+
 import { VideoCard, type VideoData } from "@/components/video-card"
+import { Button } from "@/components/ui/button"
+import { useState } from "react"
+
+type FilterType = "all" | "completed" | "pending"
+
+interface VideoGridProps {
+  filter?: FilterType
+}
 
 const mockVideos: VideoData[] = [
   {
@@ -129,17 +139,40 @@ const mockVideos: VideoData[] = [
   },
 ]
 
-export function VideoGrid() {
+const ITEMS_PER_PAGE = 6
+
+export function VideoGrid({ filter = "all" }: VideoGridProps) {
+  const [page, setPage] = useState(1)
+  
+  // 根据筛选条件过滤视频
+  const filteredVideos = mockVideos.filter(video => {
+    if (filter === "all") return true
+    if (filter === "completed") return video.completed
+    if (filter === "pending") return !video.completed
+    return true
+  })
+
+  // 计算分页
+  const totalPages = Math.ceil(filteredVideos.length / ITEMS_PER_PAGE)
+  const displayedVideos = filteredVideos.slice(0, page * ITEMS_PER_PAGE)
+  const hasMore = page * ITEMS_PER_PAGE < filteredVideos.length
+
   return (
     <div className="flex flex-col gap-4">
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
-        {mockVideos.map((video) => (
+        {displayedVideos.map((video) => (
           <VideoCard key={video.id} video={video} />
         ))}
       </div>
-      <p className="py-4 text-center text-xs text-muted-foreground">
-        仅显示最近20条记录
-      </p>
+      {hasMore && (
+        <Button
+          variant="outline"
+          className="mx-auto"
+          onClick={() => setPage(p => p + 1)}
+        >
+          加载更多
+        </Button>
+      )}
     </div>
   )
 }

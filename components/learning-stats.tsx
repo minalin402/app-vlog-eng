@@ -1,52 +1,68 @@
-import { BarChart3 } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+"use client"
 
-const stats = [
+import { BarChart3 } from "lucide-react"
+
+type FilterType = "all" | "completed" | "pending"
+
+interface StatItem {
+  label: string
+  value: number
+  color: string
+  type: FilterType
+}
+
+const stats: StatItem[] = [
   {
     label: "总期数",
-    value: 163,
-    color: "text-primary",
-    borderColor: "border-primary/30",
-    bg: "bg-primary/5",
+    value: 165,
+    color: "text-gray-700",
+    type: "all"
   },
   {
     label: "已学习",
     value: 3,
-    color: "text-success",
-    borderColor: "border-transparent",
-    bg: "bg-transparent",
+    color: "text-emerald-600",
+    type: "completed"
   },
   {
     label: "未学习",
-    value: 160,
-    color: "text-destructive",
-    borderColor: "border-transparent",
-    bg: "bg-transparent",
+    value: 162,
+    color: "text-blue-500",
+    type: "pending"
   },
 ]
 
-export function LearningStats() {
+interface LearningStatsProps {
+  onFilterChange?: (type: FilterType) => void
+  activeFilter?: FilterType
+}
+
+export function LearningStats({ onFilterChange, activeFilter = "all" }: LearningStatsProps) {
   return (
-    <Card className="border-border shadow-sm">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-sm font-semibold text-foreground">
-          <BarChart3 className="size-4 text-primary" />
-          学习统计
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="grid grid-cols-3 gap-3">
+    <div className="rounded-lg bg-white p-4">
+      <div className="flex items-center gap-2 pb-3">
+        <BarChart3 className="size-4 text-primary" />
+        <h2 className="text-sm font-semibold text-foreground">学习统计</h2>
+      </div>
+      <div className="grid grid-cols-3 gap-3">
         {stats.map((stat) => (
-          <div
+          <button
             key={stat.label}
-            className={`flex flex-col items-center gap-1 rounded-xl border ${stat.borderColor} ${stat.bg} p-3`}
+            onClick={() => onFilterChange?.(stat.type)}
+            className={`flex flex-col items-center justify-center gap-1 rounded-lg p-3 transition-all cursor-pointer
+              ${activeFilter === stat.type
+                ? 'bg-blue-100/30 border-2 border-blue-300/50 shadow-sm'
+                : 'hover:bg-gray-50 border-2 border-transparent'}`}
           >
             <span className={`text-3xl font-bold ${stat.color}`}>
               {stat.value}
             </span>
-            <span className="text-xs text-muted-foreground">{stat.label}</span>
-          </div>
+            <span className="text-sm whitespace-nowrap text-muted-foreground">
+              {stat.label}
+            </span>
+          </button>
         ))}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }

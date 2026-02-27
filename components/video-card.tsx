@@ -30,16 +30,6 @@ export function VideoCard({ video }: { video: VideoData }) {
 
   return (
     <div className="group relative overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-all hover:shadow-md">
-      {/* Completed corner badge */}
-      {video.completed && (
-        <div className="absolute top-3 left-3 z-20 flex items-center gap-1 rounded-full bg-success px-2 py-0.5 shadow-sm">
-          <CheckCircle className="size-3 text-success-foreground" />
-          <span className="text-[10px] font-medium text-success-foreground">
-            已完成
-          </span>
-        </div>
-      )}
-
       {/* Favorite button - visible on hover or if favorited */}
       <button
         onClick={(e) => {
@@ -121,7 +111,7 @@ export function VideoCard({ video }: { video: VideoData }) {
                 key={i}
                 className={`size-4 ${
                   i < video.difficulty
-                    ? "fill-warning text-warning"
+                    ? "fill-yellow-400 text-yellow-400"
                     : "fill-muted text-muted"
                 }`}
               />

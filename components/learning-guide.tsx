@@ -24,10 +24,10 @@ export function LearningGuide() {
               <div className="flex items-start gap-1.5">
                 <CheckSquare className="mt-0.5 size-3.5 shrink-0 text-success" />
                 <p className="text-xs leading-relaxed text-muted-foreground">
-                  {'学习交流&问题反馈，添加微信号：Joe7161，备注"油管"'}
+                  {'学习交流&问题反馈，添加微信号：toSeeBrightFuture，备注"油管"'}
                 </p>
               </div>
-              <span className="text-[11px] text-primary/60">2025/12/29</span>
+              <span className="text-[11px] text-primary/60">2025/12/14</span>
             </div>
           </div>
         </div>

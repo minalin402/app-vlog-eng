@@ -1,6 +1,6 @@
 "use client"
 
-import { Video, BookOpen, Layers, LogOut, User, Menu, Clock, CreditCard } from "lucide-react"
+import { Video, BookOpen, Layers, LogOut, User, Menu, Clock, CreditCard, Youtube } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Sheet,
@@ -25,8 +25,9 @@ export function Navbar() {
       {/* Desktop navbar */}
       <div className="hidden h-16 items-center justify-between px-6 md:flex">
         <div className="flex items-center gap-8">
-          <h1 className="text-lg font-bold text-foreground tracking-tight">
-            油管英语学习素材库
+          <h1 className="flex items-center gap-2 text-lg font-bold text-foreground tracking-tight">
+            <Youtube className="size-6 text-red-600" />
+            油管英语语料库
           </h1>
           <nav className="flex items-center gap-1">
             {navLinks.map((link) => (
@@ -70,7 +71,10 @@ export function Navbar() {
             </SheetTrigger>
             <SheetContent side="left" className="w-[300px] overflow-y-auto p-0">
               <SheetHeader className="border-b border-border p-4">
-                <SheetTitle className="text-left">油管英语学习素材库</SheetTitle>
+                <SheetTitle className="flex items-center gap-2 text-left">
+                  <Youtube className="size-5 text-red-600" />
+                  油管英语语料库
+                </SheetTitle>
               </SheetHeader>
 
               {/* User info + logout */}
@@ -89,14 +93,14 @@ export function Navbar() {
 
               {/* Sidebar content in drawer */}
               <div className="flex flex-col gap-4 p-4">
-                <LearningStats />
                 <SidebarCalendar />
                 <LearningGuide />
               </div>
             </SheetContent>
           </Sheet>
-          <h1 className="text-base font-bold text-foreground tracking-tight">
-            油管英语学习素材库
+          <h1 className="flex items-center gap-2 text-base font-bold text-foreground tracking-tight">
+            <Youtube className="size-5 text-red-600" />
+            油管英语语料库
           </h1>
         </div>
 
