@@ -5,7 +5,7 @@ import Link from "next/link"
 import { Star, Heart } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { useState, useCallback } from "react"
-import { useToast } from "@/hooks/use-toast"
+import { useToast } from "@/components/ui/use-toast"
 import type { Video } from "@/lib/mock-videos"
 
 // ─── 模拟后端 API：更新收藏状态 ───────────────────────────────────────────────
