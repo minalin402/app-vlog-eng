@@ -4,7 +4,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { Star, Heart } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect } from "react"
 import { toast } from "sonner"
 import type { Video } from "@/lib/mock-videos"
 
@@ -35,6 +35,35 @@ interface VideoCardProps {
 export function VideoCard({ video }: VideoCardProps) {
   const [isFavorite, setIsFavorite] = useState(video.isFavorite)
   const [isPending, setIsPending] = useState(false)
+
+  // ─── 异步拉取视频简介 ─────────────────────────────────────────────────────
+  const [description, setDescription] = useState<string | null>(null)
+  const [descLoading, setDescLoading] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+    setDescLoading(true)
+    setDescription(null)
+
+    fetch(`/api/videos/${video.id}/description`)
+      .then((res) => {
+        if (!res.ok) throw new Error("请求失败")
+        return res.json() as Promise<{ description: string }>
+      })
+      .then((data) => {
+        if (!cancelled) setDescription(data.description)
+      })
+      .catch(() => {
+        if (!cancelled) setDescription(video.description) // 降级展示本地数据
+      })
+      .finally(() => {
+        if (!cancelled) setDescLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [video.id, video.description])
 
   const formattedDate = (() => {
     const d = new Date(video.updateTime)
@@ -135,9 +164,17 @@ export function VideoCard({ video }: VideoCardProps) {
         <h3 className="line-clamp-1 text-sm font-bold text-foreground">
           {video.title}
         </h3>
-        <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
-          {video.description}
-        </p>
+        {/* 简介 */}
+        {descLoading ? (
+          <div className="flex flex-col gap-1.5" aria-busy="true">
+            <div className="h-3 w-full animate-pulse rounded bg-muted" />
+            <div className="h-3 w-4/5 animate-pulse rounded bg-muted" />
+          </div>
+        ) : (
+          <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+            {description}
+          </p>
+        )}
 
         {/* 话题标签 */}
         <div className="flex flex-wrap items-center gap-1.5">
