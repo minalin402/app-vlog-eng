@@ -1,6 +1,10 @@
 "use client"
 
-import { Video, BookOpen, Layers, LogOut, User, Menu, Clock, CreditCard, Youtube } from "lucide-react"
+import { Video, BookOpen, Layers, LogOut, User, Menu, Clock, CreditCard, Youtube, Loader2 } from "lucide-react"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { useState, useCallback } from "react"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import {
   Sheet,
@@ -14,12 +18,32 @@ import { SidebarCalendar } from "@/components/sidebar-calendar"
 import { LearningGuide } from "@/components/learning-guide"
 
 const navLinks = [
-  { label: "视频库", icon: Video, active: true },
-  { label: "学习记录", icon: BookOpen, active: false },
-  { label: "英语卡片", icon: Layers, active: false },
+  { label: "视频库", icon: Video, href: "/" },
+  { label: "学习记录", icon: BookOpen, href: "/records" },
+  { label: "英语卡片", icon: Layers, href: "/vocabulary" },
 ]
 
 export function Navbar() {
+  const router = useRouter()
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
+
+  const handleLogout = useCallback(async () => {
+    setIsLoggingOut(true)
+    try {
+      const res = await fetch("/api/auth/logout", { method: "POST" })
+      if (!res.ok) {
+        throw new Error(`服务器返回 ${res.status}`)
+      }
+      toast.success("已安全退出")
+      await new Promise((resolve) => setTimeout(resolve, 500))
+      router.push("/login")
+    } catch (err) {
+      console.error("[Logout]", err)
+      toast.error("退出失败，请重试")
+      setIsLoggingOut(false)
+    }
+  }, [router])
+
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-card">
       {/* Desktop navbar */}
@@ -33,16 +57,15 @@ export function Navbar() {
             {navLinks.map((link) => (
               <Button
                 key={link.label}
-                variant={link.active ? "default" : "ghost"}
+                variant="ghost"
                 size="sm"
-                className={
-                  link.active
-                    ? "gap-2"
-                    : "gap-2 text-muted-foreground hover:text-foreground"
-                }
+                className="gap-2 text-muted-foreground hover:text-foreground"
+                asChild
               >
-                <link.icon className="size-4" />
-                {link.label}
+                <Link href={link.href}>
+                  <link.icon className="size-4" />
+                  {link.label}
+                </Link>
               </Button>
             ))}
           </nav>
@@ -52,9 +75,19 @@ export function Navbar() {
             <User className="size-4" />
             <span>你好，学习者</span>
           </div>
-          <Button variant="outline" size="sm" className="gap-2">
-            <LogOut className="size-4" />
-            登出
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2"
+            disabled={isLoggingOut}
+            onClick={handleLogout}
+          >
+            {isLoggingOut ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <LogOut className="size-4" />
+            )}
+            {isLoggingOut ? "退出中..." : "登出"}
           </Button>
         </div>
       </div>
@@ -85,9 +118,19 @@ export function Navbar() {
                   </div>
                   <span className="text-sm font-medium text-foreground">用户7640</span>
                 </div>
-                <Button variant="destructive" size="sm" className="gap-1.5">
-                  <LogOut className="size-3.5" />
-                  退出
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="gap-1.5"
+                  disabled={isLoggingOut}
+                  onClick={handleLogout}
+                >
+                  {isLoggingOut ? (
+                    <Loader2 className="size-3.5 animate-spin" />
+                  ) : (
+                    <LogOut className="size-3.5" />
+                  )}
+                  {isLoggingOut ? "退出中..." : "退出"}
                 </Button>
               </div>
 
@@ -105,16 +148,21 @@ export function Navbar() {
         </div>
 
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="size-9 text-muted-foreground">
-            <Clock className="size-5" />
-            <span className="sr-only">学习记录</span>
+          <Button variant="ghost" size="icon" className="size-9 text-muted-foreground" asChild>
+            <Link href="/records">
+              <Clock className="size-5" />
+              <span className="sr-only">学习记录</span>
+            </Link>
           </Button>
-          <Button variant="ghost" size="icon" className="size-9 text-muted-foreground">
-            <CreditCard className="size-5" />
-            <span className="sr-only">英语卡片</span>
+          <Button variant="ghost" size="icon" className="size-9 text-muted-foreground" asChild>
+            <Link href="/vocabulary">
+              <CreditCard className="size-5" />
+              <span className="sr-only">英语卡片</span>
+            </Link>
           </Button>
         </div>
       </div>
     </header>
   )
 }
+

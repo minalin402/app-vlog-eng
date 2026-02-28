@@ -1,6 +1,7 @@
 "use client"
-import { useState } from "react"
-import { Filter, Check, ChevronDown } from "lucide-react"
+
+import { useMemo } from "react"
+import { Filter, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
@@ -25,165 +26,177 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
+import { useState } from "react"
+import type { Video } from "@/lib/mock-videos"
 
-interface FilterOption {
-  value: string
-  label: string
+// ─── 类型定义 ────────────────────────────────────────────────────────────────
+
+export type StatusFilter = "all" | "learned" | "unlearned"
+
+export interface AdvancedFilters {
+  difficulty: string[]
+  duration: string[]
+  creator: string[]
+  topic: string[]
 }
 
-interface FilterConfig {
-  label: string
-  placeholder: string
-  options: FilterOption[]
+export interface FilterBarProps {
+  /** 所有视频数据（用于动态提取博主 / 话题选项） */
+  videos: Video[]
+  /** 当前学习状态筛选 */
+  statusFilter: StatusFilter
+  /** 高级筛选状态 */
+  advancedFilters: AdvancedFilters
+  /** 学习状态变更回调 */
+  onStatusChange: (status: StatusFilter) => void
+  /** 高级筛选变更回调 */
+  onAdvancedChange: (filters: AdvancedFilters) => void
 }
 
-interface FilterConfigs {
-  [key: string]: FilterConfig
-}
+// ─── 固定选项（硬编码） ───────────────────────────────────────────────────────
 
-type FilterType = "all" | "completed" | "pending"
+const DIFFICULTY_OPTIONS = ["⭐", "⭐⭐", "⭐⭐⭐", "⭐⭐⭐⭐", "⭐⭐⭐⭐⭐"]
+const DURATION_OPTIONS = ["1分钟内", "2分钟内", "5分钟内", "10分钟以上"]
 
-const statusFilters = [
+const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
   { value: "all", label: "全部" },
-  { value: "completed", label: "已学习" },
-  { value: "pending", label: "未学习" },
+  { value: "learned", label: "已学习" },
+  { value: "unlearned", label: "未学习" },
 ]
 
-const advancedFilters: FilterConfigs = {
-  difficulty: {
-    label: "视频难度",
-    placeholder: "选择难度",
-    options: [
-      { value: "beginner", label: "入门" },
-      { value: "elementary", label: "初级" },
-      { value: "intermediate", label: "中级" },
-      { value: "advanced", label: "高级" },
-    ],
-  },
-  duration: {
-    label: "视频时长",
-    placeholder: "选择时长",
-    options: [
-      { value: "1min", label: "1分钟" },
-      { value: "2min", label: "2分钟" },
-      { value: "5min", label: "5分钟" },
-      { value: "10min", label: "10分钟以上" },
-    ],
-  },
-  creator: {
-    label: "视频博主",
-    placeholder: "选择博主",
-    options: [
-      { value: "ailing", label: "谷爱凌" },
-      { value: "traveler", label: "旅行博主" },
-      { value: "teacher", label: "英语老师" },
-    ],
-  },
-  topic: {
-    label: "视频分类",
-    placeholder: "选择分类",
-    options: [
-      { value: "sports", label: "体育" },
-      { value: "travel", label: "旅行" },
-      { value: "daily", label: "日常生活" },
-      { value: "tech", label: "科技" },
-      { value: "culture", label: "文化" },
-    ],
-  },
+// ─── 子组件：多选下拉 ─────────────────────────────────────────────────────────
+
+interface MultiSelectProps {
+  label: string
+  options: string[]
+  selected: string[]
+  onChange: (selected: string[]) => void
 }
 
-interface AdvancedFilter {
-  [key: string]: string[]
-}
+function MultiSelect({ label, options, selected, onChange }: MultiSelectProps) {
+  const isAllSelected = selected.length === options.length
 
-interface FilterBarProps {
-  filter?: FilterType
-  onFilterChange?: (type: FilterType) => void
-}
-
-export function FilterBar({ filter = "all", onFilterChange }: FilterBarProps) {
-  const [mobileFilter, setMobileFilter] = useState<FilterType>("all")
-  const [isOpen, setIsOpen] = useState(false)
-  const [selectedFilters, setSelectedFilters] = useState<AdvancedFilter>({})
-  
-  // 新增：专门用来控制手机端哪些筛选项被展开了
-  const [expandedMobileFilters, setExpandedMobileFilters] = useState<Record<string, boolean>>({})
-
-  const handleFilterChange = (type: FilterType) => {
-    onFilterChange?.(type)
-    setMobileFilter(type)
+  const toggle = (value: string) => {
+    if (selected.includes(value)) {
+      onChange(selected.filter((v) => v !== value))
+    } else {
+      onChange([...selected, value])
+    }
   }
 
-  const handleSelectFilter = (filterType: string, value: string) => {
-    setSelectedFilters(prev => {
-      const current = prev[filterType] || []
-      if (current.includes(value)) {
-        return {
-          ...prev,
-          [filterType]: current.filter(v => v !== value)
-        }
-      } else {
-        return {
-          ...prev,
-          [filterType]: [...current, value]
-        }
-      }
-    })
+  const toggleAll = () => {
+    onChange(isAllSelected ? [] : [...options])
   }
 
-  const handleSelectAll = (filterType: string) => {
-    setSelectedFilters(prev => {
-      const allValues = advancedFilters[filterType].options.map(o => o.value)
-      const current = prev[filterType] || []
-      
-      if (current.length === allValues.length) {
-        const newFilters = { ...prev }
-        delete newFilters[filterType]
-        return newFilters
-      }
-      
-      return { ...prev, [filterType]: allValues }
-    })
+  const displayText =
+    selected.length === 0
+      ? `选择${label}`
+      : isAllSelected
+      ? "已全选"
+      : `已选 ${selected.length} 项`
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          className="w-full justify-between font-normal"
+        >
+          {displayText}
+          <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[200px] p-0" align="start">
+        <Command>
+          <CommandInput placeholder={`搜索${label}...`} />
+          <CommandEmpty>未找到结果</CommandEmpty>
+          <CommandGroup>
+            <div
+              className="mb-1 flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 hover:bg-accent hover:text-accent-foreground"
+              onClick={toggleAll}
+            >
+              <Checkbox
+                checked={isAllSelected}
+                className="pointer-events-none h-4 w-4"
+              />
+              <span className="text-sm font-medium">全选</span>
+            </div>
+            {options.map((opt) => (
+              <CommandItem
+                key={opt}
+                onSelect={() => toggle(opt)}
+                className="flex cursor-pointer items-center gap-2"
+              >
+                <Checkbox
+                  checked={selected.includes(opt)}
+                  className="pointer-events-none h-4 w-4"
+                />
+                <span>{opt}</span>
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  )
+}
+
+// ─── 主组件 ───────────────────────────────────────────────────────────────────
+
+export function FilterBar({
+  videos,
+  statusFilter,
+  advancedFilters,
+  onStatusChange,
+  onAdvancedChange,
+}: FilterBarProps) {
+  const [isSheetOpen, setIsSheetOpen] = useState(false)
+  const [expandedMobileFilters, setExpandedMobileFilters] = useState<
+    Record<string, boolean>
+  >({})
+
+  // 动态提取博主 / 话题选项（去重）
+  const creatorOptions = useMemo(
+    () => Array.from(new Set(videos.map((v) => v.creator))).sort(),
+    [videos]
+  )
+  const topicOptions = useMemo(
+    () => Array.from(new Set(videos.flatMap((v) => v.topics))).sort(),
+    [videos]
+  )
+
+  // 筛选维度配置（固定 + 动态）
+  const filterConfigs = useMemo(
+    () => [
+      { key: "difficulty" as const, label: "视频难度", options: DIFFICULTY_OPTIONS },
+      { key: "duration" as const, label: "视频时长", options: DURATION_OPTIONS },
+      { key: "creator" as const, label: "视频博主", options: creatorOptions },
+      { key: "topic" as const, label: "视频分类", options: topicOptions },
+    ],
+    [creatorOptions, topicOptions]
+  )
+
+  const handleAdvancedChange = (
+    key: keyof AdvancedFilters,
+    selected: string[]
+  ) => {
+    onAdvancedChange({ ...advancedFilters, [key]: selected })
   }
 
   const handleReset = () => {
-    setSelectedFilters({})
-    handleFilterChange("all")
-    setIsOpen(false)
+    onStatusChange("all")
+    onAdvancedChange({ difficulty: [], duration: [], creator: [], topic: [] })
+    setIsSheetOpen(false)
   }
 
-  const handleApply = () => {
-    setIsOpen(false)
-  }
-
-  const isSelected = (filterType: string, value: string) => {
-    return (selectedFilters[filterType] || []).includes(value)
-  }
-
-  const isAllSelected = (filterType: string) => {
-    const allValues = advancedFilters[filterType].options.map(o => o.value)
-    const current = selectedFilters[filterType] || []
-    return current.length === allValues.length
-  }
-
-  const getSelectedText = (filterType: string) => {
-    const selected = selectedFilters[filterType] || []
-    if (selected.length === 0) return advancedFilters[filterType].placeholder
-    if (selected.length === advancedFilters[filterType].options.length) return "已全选"
-    return `已选 ${selected.length} 项`
-  }
-
-  // 新增：切换手机端折叠状态的函数
   const toggleMobileFilter = (key: string) => {
-    setExpandedMobileFilters(prev => ({
-      ...prev,
-      [key]: !prev[key]
-    }))
+    setExpandedMobileFilters((prev) => ({ ...prev, [key]: !prev[key] }))
   }
 
   return (
     <>
-      {/* Desktop view (保持原样) */}
+      {/* ── 桌面端 ─────────────────────────────────────────────────────── */}
       <Card className="hidden border-border shadow-sm md:block">
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
@@ -191,15 +204,19 @@ export function FilterBar({ filter = "all", onFilterChange }: FilterBarProps) {
               筛选条件
             </CardTitle>
             <div className="flex items-center gap-2">
-              {statusFilters.map((status) => (
+              {STATUS_FILTERS.map((s) => (
                 <Button
-                  key={status.value}
-                  variant={filter === status.value ? "default" : "ghost"}
-                  onClick={() => handleFilterChange(status.value as FilterType)}
+                  key={s.value}
+                  variant={statusFilter === s.value ? "default" : "ghost"}
                   size="sm"
-                  className={filter === status.value ? "bg-blue-100 text-blue-600 hover:bg-blue-200" : ""}
+                  onClick={() => onStatusChange(s.value)}
+                  className={
+                    statusFilter === s.value
+                      ? "bg-blue-100 text-blue-600 hover:bg-blue-200"
+                      : ""
+                  }
                 >
-                  {status.label}
+                  {s.label}
                 </Button>
               ))}
             </div>
@@ -207,77 +224,38 @@ export function FilterBar({ filter = "all", onFilterChange }: FilterBarProps) {
         </CardHeader>
         <CardContent className="pt-0">
           <div className="grid grid-cols-4 gap-6">
-            {Object.entries(advancedFilters).map(([key, filter]) => (
+            {filterConfigs.map(({ key, label, options }) => (
               <div key={key} className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium text-foreground">
-                    {filter.label}
-                  </label>
-                </div>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      className="w-full justify-between font-normal"
-                    >
-                      {getSelectedText(key)}
-                      <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[200px] p-0" align="start">
-                    <Command>
-                      <CommandInput placeholder={`搜索${filter.label}...`} />
-                      <CommandEmpty>未找到结果</CommandEmpty>
-                      <CommandGroup>
-                        <div 
-                          className="mb-1 flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-accent hover:text-accent-foreground rounded-sm"
-                          onClick={() => handleSelectAll(key)}
-                        >
-                          <Checkbox
-                            checked={isAllSelected(key)}
-                            className="h-4 w-4 pointer-events-none"
-                          />
-                          <span className="text-sm font-medium">全选</span>
-                        </div>
-                        {filter.options.map((option) => (
-                          <CommandItem
-                            key={option.value}
-                            onSelect={() => handleSelectFilter(key, option.value)}
-                            className="flex items-center gap-2 cursor-pointer"
-                          >
-                            <Checkbox
-                              checked={isSelected(key, option.value)}
-                              className="h-4 w-4 pointer-events-none"
-                            />
-                            <span>{option.label}</span>
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
+                <label className="text-sm font-medium text-foreground">
+                  {label}
+                </label>
+                <MultiSelect
+                  label={label}
+                  options={options}
+                  selected={advancedFilters[key]}
+                  onChange={(selected) => handleAdvancedChange(key, selected)}
+                />
               </div>
             ))}
           </div>
         </CardContent>
       </Card>
 
-      {/* Mobile view (重构成折叠手风琴效果) */}
+      {/* ── 移动端 ─────────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between md:hidden">
         <div className="flex gap-2">
-          {statusFilters.map((status) => (
+          {STATUS_FILTERS.map((s) => (
             <Button
-              key={status.value}
-              variant={mobileFilter === status.value ? "default" : "outline"}
-              onClick={() => handleFilterChange(status.value as FilterType)}
+              key={s.value}
+              variant={statusFilter === s.value ? "default" : "outline"}
               size="sm"
+              onClick={() => onStatusChange(s.value)}
             >
-              {status.label}
+              {s.label}
             </Button>
           ))}
         </div>
-        <Sheet open={isOpen} onOpenChange={setIsOpen}>
+        <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
           <SheetTrigger asChild>
             <Button variant="outline" size="icon" className="shrink-0">
               <Filter className="size-4" />
@@ -285,62 +263,81 @@ export function FilterBar({ filter = "all", onFilterChange }: FilterBarProps) {
           </SheetTrigger>
           <SheetContent side="bottom" className="h-[80%] rounded-t-xl px-4">
             <SheetHeader className="pb-4">
-              <SheetTitle className="text-sm font-semibold text-foreground">筛选条件</SheetTitle>
+              <SheetTitle className="text-sm font-semibold text-foreground">
+                筛选条件
+              </SheetTitle>
             </SheetHeader>
-            <div className="space-y-1 px-2 overflow-y-auto max-h-[calc(80vh-180px)]">
-              {Object.entries(advancedFilters).map(([key, filter]) => (
-                <div key={key} className="border-b border-border/50 pb-2 pt-2 last:border-0">
-                  {/* 点击这个区域切换折叠状态 */}
-                  <div 
-                    className="flex items-center justify-between py-2 cursor-pointer hover:bg-accent/50 rounded-md px-2 -mx-2 transition-colors"
+            <div className="max-h-[calc(80vh-180px)] space-y-1 overflow-y-auto px-2">
+              {filterConfigs.map(({ key, label, options }) => (
+                <div
+                  key={key}
+                  className="border-b border-border/50 pb-2 pt-2 last:border-0"
+                >
+                  <div
+                    className="-mx-2 flex cursor-pointer items-center justify-between rounded-md px-2 py-2 transition-colors hover:bg-accent/50"
                     onClick={() => toggleMobileFilter(key)}
                   >
                     <div className="flex items-center gap-2">
-                      <label className="text-sm font-medium text-foreground cursor-pointer pointer-events-none">
-                        {filter.label}
-                      </label>
-                      {/* 如果有选中的项，在标题旁边显示一个蓝色小圆点提示数量 */}
-                      {(selectedFilters[key]?.length || 0) > 0 && (
+                      <span className="text-sm font-medium text-foreground">
+                        {label}
+                      </span>
+                      {advancedFilters[key].length > 0 && (
                         <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-100 text-[10px] font-semibold text-blue-600">
-                          {selectedFilters[key].length}
+                          {advancedFilters[key].length}
                         </span>
                       )}
                     </div>
-                    {/* 箭头动画：展开时旋转 180 度 */}
-                    <ChevronDown className={cn(
-                      "h-4 w-4 text-muted-foreground transition-transform duration-200", 
-                      expandedMobileFilters[key] && "rotate-180"
-                    )} />
+                    <ChevronDown
+                      className={cn(
+                        "h-4 w-4 text-muted-foreground transition-transform duration-200",
+                        expandedMobileFilters[key] && "rotate-180"
+                      )}
+                    />
                   </div>
-                  
-                  {/* 展开的具体内容 */}
                   {expandedMobileFilters[key] && (
-                    <div className="mt-2 mb-4 animate-in slide-in-from-top-1 fade-in duration-200">
+                    <div className="animate-in slide-in-from-top-1 fade-in mb-4 mt-2 duration-200">
                       <Command className="rounded-lg border shadow-sm">
-                        <CommandInput placeholder={`搜索${filter.label}...`} />
+                        <CommandInput placeholder={`搜索${label}...`} />
                         <CommandEmpty>未找到结果</CommandEmpty>
                         <CommandGroup>
-                          <div 
-                            className="mb-1 flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-accent hover:text-accent-foreground rounded-sm"
-                            onClick={() => handleSelectAll(key)}
+                          <div
+                            className="mb-1 flex cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 hover:bg-accent hover:text-accent-foreground"
+                            onClick={() =>
+                              handleAdvancedChange(
+                                key,
+                                advancedFilters[key].length === options.length
+                                  ? []
+                                  : [...options]
+                              )
+                            }
                           >
                             <Checkbox
-                              checked={isAllSelected(key)}
-                              className="h-4 w-4 pointer-events-none"
+                              checked={
+                                advancedFilters[key].length === options.length
+                              }
+                              className="pointer-events-none h-4 w-4"
                             />
                             <span className="text-sm font-medium">全选</span>
                           </div>
-                          {filter.options.map((option) => (
+                          {options.map((opt) => (
                             <CommandItem
-                              key={option.value}
-                              onSelect={() => handleSelectFilter(key, option.value)}
-                              className="flex items-center gap-2 cursor-pointer"
+                              key={opt}
+                              onSelect={() => {
+                                const cur = advancedFilters[key]
+                                handleAdvancedChange(
+                                  key,
+                                  cur.includes(opt)
+                                    ? cur.filter((v) => v !== opt)
+                                    : [...cur, opt]
+                                )
+                              }}
+                              className="flex cursor-pointer items-center gap-2"
                             >
                               <Checkbox
-                                checked={isSelected(key, option.value)}
-                                className="h-4 w-4 pointer-events-none"
+                                checked={advancedFilters[key].includes(opt)}
+                                className="pointer-events-none h-4 w-4"
                               />
-                              <span>{option.label}</span>
+                              <span>{opt}</span>
                             </CommandItem>
                           ))}
                         </CommandGroup>
@@ -351,14 +348,10 @@ export function FilterBar({ filter = "all", onFilterChange }: FilterBarProps) {
               ))}
             </div>
             <SheetFooter className="absolute bottom-0 left-0 right-0 flex gap-2 border-t bg-background p-4 pb-8">
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={handleReset}
-              >
+              <Button variant="outline" className="flex-1" onClick={handleReset}>
                 重置
               </Button>
-              <Button className="flex-1" onClick={handleApply}>
+              <Button className="flex-1" onClick={() => setIsSheetOpen(false)}>
                 确定
               </Button>
             </SheetFooter>
