@@ -5,6 +5,7 @@ export interface Video extends VideoRow {
   status?: 'unlearned' | 'learning' | 'learned' // 学习状态
   topics: string[] // 话题标签
   accent: string // 口音类型
+  creator?: string;
 }
 
 export type StatusFilter = "all" | "learned" | "unlearned"

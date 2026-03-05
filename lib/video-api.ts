@@ -25,8 +25,10 @@ export interface VocabItem {
   id: string;
   word: string;
   phonetic?: string;
+  pos?: string;
   chinese_definition: string;
   english_definition: string;
+  synonyms?: string;
   example_from_video: string;
   example_translation: string;
   first_appearance_time: number;

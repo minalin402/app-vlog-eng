@@ -157,7 +157,7 @@ export function VocabPage() {
               }
               favoriteCount={
                 (activeTab === "words" ? words : activeTab === "phrases" ? phrases : expressions)
-                .filter(item => favState[item.id]).length
+                .filter((item: any) => favState[item.id]).length
               }
             />
 

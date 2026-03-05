@@ -139,12 +139,12 @@ export function FilterBar({
   advancedFilters,
   onStatusChange,
   onAdvancedChange,
-}: FilterBarProps) {
+}: any) {
   const [isSheetOpen, setIsSheetOpen] = useState(false)
   const [expandedMobileFilters, setExpandedMobileFilters] = useState<Record<string, boolean>>({})
 
-  const creatorOptions = useMemo(() => Array.from(new Set(videos.map(v => v.creator))).sort(), [videos])
-  const topicOptions = useMemo(() => Array.from(new Set(videos.flatMap(v => v.topics || []))).sort(), [videos])
+  const creatorOptions = useMemo(() => Array.from(new Set(videos.map((v: any) => v.creator))).sort(), [videos])
+  const topicOptions = useMemo(() => Array.from(new Set(videos.flatMap((v: any) => v.topics || []))).sort(), [videos])
 
   const filterConfigs = useMemo(() => [
     { key: "difficulty" as const, label: "视频难度", options: DIFFICULTY_OPTIONS },
@@ -164,7 +164,7 @@ export function FilterBar({
   }
 
   const hasAnyFilter = useMemo(() => {
-    return Object.values(advancedFilters).some(arr => arr.length > 0)
+    return Object.values(advancedFilters).some((arr: any) => arr.length > 0)
   }, [advancedFilters])
 
   return (
@@ -202,7 +202,7 @@ export function FilterBar({
               <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">{label}</label>
               <MultiSelect
                 label={label}
-                options={options}
+                options={options as any}
                 selected={advancedFilters[key]}
                 onChange={(selected) => onAdvancedChange({ ...advancedFilters, [key]: selected })}
               />
@@ -281,7 +281,7 @@ export function FilterBar({
                               <Checkbox checked={advancedFilters[key].length === options.length} className="pointer-events-none h-4 w-4" />
                               <span className="text-sm font-medium">全选</span>
                             </div>
-                            {options.map((opt) => {
+                            {options.map((opt: any) => {
                               const isSelected = advancedFilters[key].includes(opt)
                               return (
                                 <CommandItem
@@ -290,7 +290,7 @@ export function FilterBar({
                                     const cur = advancedFilters[key]
                                     onAdvancedChange({
                                       ...advancedFilters,
-                                      [key]: isSelected ? cur.filter((v) => v !== opt) : [...cur, opt]
+                                      [key]: isSelected ? cur.filter((v: any) => v !== opt) : [...cur, opt]
                                     })
                                   }}
                                   className="flex cursor-pointer items-center gap-2 py-2"

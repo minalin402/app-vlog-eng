@@ -122,10 +122,10 @@ const config = {
   poweredByHeader: false,
 
   // 国际化配置
-  i18n: {
-    locales: ['zh-CN', 'en'],
-    defaultLocale: 'zh-CN'
-  },
+  //i18n: {
+   // locales: ['zh-CN', 'en'],
+    //defaultLocale: 'zh-CN'
+  //},
 
   // 禁用 webpack 配置以支持 Turbopack
   webpack: undefined

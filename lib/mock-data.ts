@@ -1,6 +1,5 @@
-import type { VideoCardData } from "@/components/video-card"
 
-export const allVideos: VideoCardData[] = [
+export const allVideos: any[] = [
   {
     id: 1,
     title: "谷爱凌：霸气回应质疑",

@@ -212,7 +212,7 @@ export default function VideoLearningPage() {
         return
       }
       setVideoData(data)
-      setLearningStatus(statusData.status)
+      setLearningStatus(statusData.status as LearningStatus)
       setShowResetButton(statusData.status === "learned")
 
       const initialFavs: Record<string, boolean> = {}
@@ -844,10 +844,10 @@ const rafCallback = useCallback(() => {
          
 
           {/* ✨ 新增：藏在字幕列表最底部的“隐形”链接 */}
-            {videoData?.originalYoutubeUrl && (
+            {(videoData as any)?.originalYoutubeUrl && (
               <div className="mt-6 mb-6 flex justify-center">
                 <a
-                  href={videoData.originalYoutubeUrl}
+                  href={(videoData as any)?.originalYoutubeUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   // 1. text-muted-foreground/60: 颜色深了一倍，确保在各种背景下都能看清

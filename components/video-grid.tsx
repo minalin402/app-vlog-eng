@@ -28,7 +28,7 @@ export function VideoGrid({ statusFilter, advancedFilters, initialVideos }: Vide
       if (advancedFilters.difficulty.length > 0 && !advancedFilters.difficulty.includes(String(video.difficulty))) return false
 
       // 3. 视频博主筛选
-      if (advancedFilters.creator.length > 0 && !advancedFilters.creator.includes(video.creator)) return false
+      if (advancedFilters.creator.length > 0 && !advancedFilters.creator.includes(video.creator || "")) return false
 
       // 4. 视频分类/标签筛选
       if (advancedFilters.topic.length > 0) {

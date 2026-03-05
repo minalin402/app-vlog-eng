@@ -17,9 +17,9 @@ export function VideoDescription({ video }: VideoDescriptionProps) {
       <p className="text-sm text-muted-foreground leading-relaxed">
         {video?.description || '加载中...'}
         {/* ✨ 在描述文字的末尾加上这段代码 */}
-        {video.originalYoutubeUrl && (
+        {(video as any)?.originalYoutubeUrl && (
           <a
-            href={video.originalYoutubeUrl}
+            href={(video as any)?.originalYoutubeUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="text-blue-300 hover:text-blue-600 hover:underline ml-2 font-medium inline-flex items-center"
