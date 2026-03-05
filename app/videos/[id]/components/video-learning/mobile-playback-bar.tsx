@@ -16,6 +16,7 @@ import {
   Check,
 } from "lucide-react"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 
 interface MobilePlaybackBarProps {
   isPlaying: boolean
@@ -44,7 +45,7 @@ type SheetType = "subtitle" | "speed" | "loop" | "practice" | null
 
 function GreenCheck() {
   return (
-    <span className="flex items-center justify-center size-5 rounded-full bg-[#22c55e] ml-auto shrink-0">
+    <span className="flex items-center justify-center size-5 rounded-full bg-[#3b82f6] ml-auto shrink-0">
       <Check className="size-3 text-[#ffffff]" strokeWidth={3} />
     </span>
   )
@@ -71,7 +72,7 @@ export function MobilePlaybackBar({
   onAutoNextChange,
 }: MobilePlaybackBarProps) {
   const [activeSheet, setActiveSheet] = useState<SheetType>(null)
-
+  const pathname = usePathname()
   const toggleSheet = (sheet: SheetType) => {
     setActiveSheet(activeSheet === sheet ? null : sheet)
   }
@@ -113,7 +114,7 @@ export function MobilePlaybackBar({
                     onClick={() => onSubtitleModeChange(item.key)}
                     className={`px-4 py-1.5 rounded-full text-xs font-medium transition-colors ${
                       subtitleMode === item.key
-                        ? "bg-[#22c55e] text-[#ffffff]"
+                        ? "bg-[#3b82f6] text-[#ffffff]"
                         : "text-muted-foreground hover:bg-accent"
                     }`}
                   >
@@ -136,7 +137,7 @@ export function MobilePlaybackBar({
                     const val = Number(e.target.value)
                     onFontSizeChange(val === 0 ? "small" : val === 1 ? "medium" : "large")
                   }}
-                  className="w-full h-1.5 rounded-full appearance-none cursor-pointer bg-muted accent-[#22c55e]"
+                  className="w-full h-1.5 rounded-full appearance-none cursor-pointer bg-muted accent-[#3b82f6]"
                 />
               </div>
               <span className="text-xs text-muted-foreground shrink-0 w-8 text-right">
@@ -159,7 +160,7 @@ export function MobilePlaybackBar({
                 key={s}
                 onClick={() => { onSpeedChange(s); closeSheet() }}
                 className={`flex items-center justify-between w-full px-4 py-3 text-sm rounded-lg transition-colors ${
-                  playbackSpeed === s ? "text-[#22c55e] font-semibold" : "text-foreground hover:bg-accent"
+                  playbackSpeed === s ? "text-[#3b82f6] font-semibold" : "text-foreground hover:bg-accent"
                 }`}
               >
                 <span>{s}x</span>
@@ -230,7 +231,7 @@ export function MobilePlaybackBar({
                         const v = Number(e.target.value)
                         onLoopCountChange(v)
                       }}
-                      className="w-full h-1.5 rounded-full appearance-none cursor-pointer bg-muted accent-[#22c55e]"
+                      className="w-full h-1.5 rounded-full appearance-none cursor-pointer bg-muted accent-[#3b82f6]"
                     />
                   </div>
                   <span className="text-sm font-medium text-foreground shrink-0 w-8 text-right">
@@ -245,7 +246,7 @@ export function MobilePlaybackBar({
                     aria-checked={autoNext}
                     onClick={() => onAutoNextChange(!autoNext)}
                     className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors ${
-                      autoNext ? "bg-[#22c55e]" : "bg-muted-foreground/30"
+                      autoNext ? "bg-[#3b82f6]" : "bg-muted-foreground/30"
                     }`}
                   >
                     <span
@@ -269,7 +270,7 @@ export function MobilePlaybackBar({
           </div>
           <div className="px-4 pb-4 flex flex-col gap-2">
             <Link
-              href="/vocab-cards"
+              href={`${pathname}/vocab-cards`} 
               onClick={closeSheet}
               className="flex items-center gap-3 w-full px-4 py-3.5 rounded-xl bg-muted/50 transition-colors hover:bg-accent"
             >
@@ -277,6 +278,7 @@ export function MobilePlaybackBar({
               <span className="text-sm text-foreground">英语卡片</span>
               <ChevronRight className="size-4 text-muted-foreground ml-auto" />
             </Link>
+            
             <button
               onClick={() => { onPracticeModeChange("shadowing"); closeSheet() }}
               className="flex items-center gap-3 w-full px-4 py-3.5 rounded-xl bg-muted/50 transition-colors hover:bg-accent"
@@ -315,8 +317,8 @@ export function MobilePlaybackBar({
             onClick={() => toggleSheet("subtitle")}
             className="flex flex-col items-center gap-0.5 py-1"
           >
-            <Languages className={`size-5 ${activeSheet === "subtitle" ? "text-[#22c55e]" : "text-muted-foreground"}`} />
-            <span className={`text-[10px] ${activeSheet === "subtitle" ? "text-[#22c55e] font-medium" : "text-muted-foreground"}`}>
+            <Languages className={`size-5 ${activeSheet === "subtitle" ? "text-[#3b82f6]" : "text-muted-foreground"}`} />
+            <span className={`text-[10px] ${activeSheet === "subtitle" ? "text-[#3b82f6] font-medium" : "text-muted-foreground"}`}>
               {subtitleLabel}
             </span>
           </button>
@@ -327,11 +329,11 @@ export function MobilePlaybackBar({
             className="flex flex-col items-center gap-0.5 py-1"
           >
             <span className={`text-sm font-bold leading-5 ${
-              activeSheet === "speed" ? "text-[#22c55e]" : "text-muted-foreground"
+              activeSheet === "speed" ? "text-[#3b82f6]" : "text-muted-foreground"
             }`}>
               {playbackSpeed === 1 ? "1x" : `${playbackSpeed}x`}
             </span>
-            <span className={`text-[10px] ${activeSheet === "speed" ? "text-[#22c55e] font-medium" : "text-muted-foreground"}`}>
+            <span className={`text-[10px] ${activeSheet === "speed" ? "text-[#3b82f6] font-medium" : "text-muted-foreground"}`}>
               倍速
             </span>
           </button>
@@ -339,7 +341,7 @@ export function MobilePlaybackBar({
           {/* Center play button */}
           <button
             onClick={onPlayPause}
-            className="flex items-center justify-center size-14 -mt-4 rounded-full bg-[#22c55e] text-[#ffffff] shadow-lg active:scale-95 transition-transform"
+            className="flex items-center justify-center size-14 -mt-4 rounded-full bg-[#3b82f6] text-[#ffffff] shadow-lg active:scale-95 transition-transform"
             aria-label={isPlaying ? "暂停" : "播放"}
           >
             {isPlaying ? <Pause className="size-6" /> : <Play className="size-6 ml-0.5" fill="#ffffff" />}
@@ -350,8 +352,8 @@ export function MobilePlaybackBar({
             onClick={() => toggleSheet("loop")}
             className="flex flex-col items-center gap-0.5 py-1"
           >
-            <Repeat className={`size-5 ${activeSheet === "loop" ? "text-[#22c55e]" : "text-muted-foreground"}`} />
-            <span className={`text-[10px] ${activeSheet === "loop" ? "text-[#22c55e] font-medium" : "text-muted-foreground"}`}>
+            <Repeat className={`size-5 ${activeSheet === "loop" ? "text-[#3b82f6]" : "text-muted-foreground"}`} />
+            <span className={`text-[10px] ${activeSheet === "loop" ? "text-[#3b82f6] font-medium" : "text-muted-foreground"}`}>
               循环
             </span>
           </button>
@@ -361,8 +363,8 @@ export function MobilePlaybackBar({
             onClick={() => toggleSheet("practice")}
             className="flex flex-col items-center gap-0.5 py-1"
           >
-            <BookOpen className={`size-5 ${activeSheet === "practice" || practiceMode !== "none" ? "text-[#22c55e]" : "text-muted-foreground"}`} />
-            <span className={`text-[10px] ${activeSheet === "practice" || practiceMode !== "none" ? "text-[#22c55e] font-medium" : "text-muted-foreground"}`}>
+            <BookOpen className={`size-5 ${activeSheet === "practice" || practiceMode !== "none" ? "text-[#3b82f6]" : "text-muted-foreground"}`} />
+            <span className={`text-[10px] ${activeSheet === "practice" || practiceMode !== "none" ? "text-[#3b82f6] font-medium" : "text-muted-foreground"}`}>
               精读
             </span>
           </button>

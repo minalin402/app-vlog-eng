@@ -5,124 +5,76 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Calendar } from "@/components/ui/calendar"
 import { Spinner } from "@/components/ui/spinner"
 import { cn } from "@/lib/utils"
-
-// ──────────────────────────────────────────────
-// 类型定义
-// ──────────────────────────────────────────────
-
-interface LearnedDatesMap {
-  [key: string]: Date[]
-}
-
-// ──────────────────────────────────────────────
-// 模拟异步 API：根据年月返回已学习日期
-// ──────────────────────────────────────────────
-
-const MOCK_LEARNED_DATES: LearnedDatesMap = {
-  // 2026 年 1 月
-  "2026-1": [
-    new Date(2026, 0, 5),
-    new Date(2026, 0, 12),
-    new Date(2026, 0, 18),
-    new Date(2026, 0, 25),
-  ],
-  // 2026 年 2 月
-  "2026-2": [
-    new Date(2026, 1, 3),
-    new Date(2026, 1, 10),
-    new Date(2026, 1, 17),
-    new Date(2026, 1, 20),
-    new Date(2026, 1, 21),
-    new Date(2026, 1, 23),
-  ],
-  // 2026 年 3 月
-  "2026-3": [
-    new Date(2026, 2, 1),
-    new Date(2026, 2, 8),
-    new Date(2026, 2, 15),
-  ],
-}
-
-function fetchLearnedDates(year: number, month: number): Promise<Date[]> {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const key = `${year}-${month + 1}`
-      resolve(MOCK_LEARNED_DATES[key] ?? [])
-    }, 500)
-  })
-}
-
-// ──────────────────────────────────────────────
-// 工具函数
-// ──────────────────────────────────────────────
-
-function isSameDay(a: Date, b: Date): boolean {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  )
-}
-
-function isToday(day: Date): boolean {
-  return isSameDay(day, new Date())
-}
-
-// ──────────────────────────────────────────────
-// 组件
-// ──────────────────────────────────────────────
+import { supabase } from "@/lib/supabase-client" // 导入真实客户端
+import { isSameDay, startOfMonth, endOfMonth } from "date-fns"
 
 export function SidebarCalendar() {
   const today = new Date()
-
-  const [currentMonth, setCurrentMonth] = useState<Date>(
-    new Date(today.getFullYear(), today.getMonth(), 1)
-  )
+  const [currentMonth, setCurrentMonth] = useState<Date>(new Date(today.getFullYear(), today.getMonth(), 1))
   const [learnedDates, setLearnedDates] = useState<Date[]>([])
   const [isLoading, setIsLoading] = useState<boolean>(false)
 
-  // 加载指定月份的已学习日期
+  // 🟢 核心修改：从 Supabase 拉取真实学习日期
   const loadLearnedDates = useCallback(async (month: Date) => {
     setIsLoading(true)
     try {
-      const data = await fetchLearnedDates(month.getFullYear(), month.getMonth())
-      setLearnedDates(data)
+      // 1. 获取当前登录用户
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      // 2. 计算本月的起始和结束时间
+      const start = startOfMonth(month).toISOString()
+      const end = endOfMonth(month).toISOString()
+
+      // 3. 查询 user_learning_progress 表中在本月更新过的记录
+      const { data, error } = await supabase
+        .from('user_learning_progress')
+        .select('last_learned_at')
+        .eq('user_id', user.id)
+        .eq('status', 'learned') // 只统计已完成的
+        .gte('last_learned_at', start)
+        .lte('last_learned_at', end)
+
+      if (error) throw error
+
+      // 4. 将字符串日期转换为 Date 对象并去重
+      const dates = data
+        .map(item => new Date(item.last_learned_at))
+        .filter((date, index, self) => 
+          self.findIndex(d => isSameDay(d, date)) === index
+        )
+      
+      setLearnedDates(dates)
+    } catch (err) {
+      console.error("加载学习日历失败:", err)
     } finally {
       setIsLoading(false)
     }
   }, [])
 
-  // 初始加载当前月
+  // 初始加载和切换月份加载
   useEffect(() => {
     loadLearnedDates(currentMonth)
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // 切换月份时懒加载
-  const handleMonthChange = (month: Date) => {
-    setCurrentMonth(month)
-    loadLearnedDates(month)
-  }
+  }, [currentMonth, loadLearnedDates])
 
   return (
     <Card className="border-border shadow-sm">
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center gap-2 text-sm font-semibold text-foreground">
           学习日历
-          {isLoading && (
-            <Spinner className="size-3 text-muted-foreground" aria-label="加载中" />
-          )}
+          {isLoading && <Spinner className="size-3 text-muted-foreground" />}
         </CardTitle>
       </CardHeader>
       <CardContent className="flex justify-center px-2 pb-3">
         <Calendar
           mode="single"
           month={currentMonth}
-          onMonthChange={handleMonthChange}
+          onMonthChange={setCurrentMonth}
           className="w-full"
           components={{
             DayButton: ({ day, modifiers, ...props }) => {
               const learned = learnedDates.some((d) => isSameDay(d, day.date))
-              const todayDay = isToday(day.date)
+              const isToday = isSameDay(day.date, new Date())
               const outside = modifiers.outside
 
               return (
@@ -130,12 +82,9 @@ export function SidebarCalendar() {
                   {...props}
                   className={cn(
                     "flex aspect-square size-auto w-full items-center justify-center text-sm font-normal transition-colors",
-                    learned &&
-                      "bg-green-100 text-green-600 rounded-full font-bold hover:bg-green-200",
-                    todayDay &&
-                      !learned &&
-                      "bg-blue-500 text-white rounded-full font-bold hover:bg-blue-600",
-                    !learned && !todayDay && "hover:bg-accent hover:text-accent-foreground rounded-md",
+                    learned && "bg-green-100 text-green-600 rounded-full font-bold hover:bg-green-200",
+                    isToday && !learned && "bg-blue-500 text-white rounded-full font-bold",
+                    !learned && !isToday && "hover:bg-accent rounded-md",
                     outside && "text-muted-foreground opacity-50"
                   )}
                 >

@@ -16,6 +16,7 @@ interface VideoPlayerProps {
   onToggleMute?: () => void
   onEnded?: () => void
   onSeeked?: () => void
+  onSpeedChange?: (speed: number) => void
   mini?: boolean
 }
 
@@ -32,6 +33,7 @@ export function VideoPlayer({
   onToggleMute,
   onEnded,
   onSeeked,
+  onSpeedChange,
   mini,
 }: VideoPlayerProps) {
   const internalRef = useRef<HTMLVideoElement>(null)
@@ -140,11 +142,20 @@ export function VideoPlayer({
           <div className="relative px-3 pb-2.5 pt-8">
 
             {/* Progress bar — DOM-driven, zero React re-renders */}
+
             <div
               className="relative h-1 bg-white/30 rounded-full cursor-pointer mb-2.5 group/bar"
               onClick={(e) => {
                 const rect = e.currentTarget.getBoundingClientRect()
-                onSeek((e.clientX - rect.left) / rect.width * duration)
+                const newTime = (e.clientX - rect.left) / rect.width * duration
+                
+                // 1. 通知视频去跳转
+                onSeek(newTime)
+                
+                // 2. 核心修复：不准等浏览器的 250ms 延迟，强行瞬间把进度条 UI 挪过去！
+                const pct = duration > 0 ? (newTime / duration) * 100 : 0
+                if (progressBarRef.current) progressBarRef.current.style.width = `${pct}%`
+                if (progressThumbRef.current) progressThumbRef.current.style.left = `calc(${pct}% - 6px)`
               }}
               role="slider"
               aria-label="进度条"
@@ -154,7 +165,7 @@ export function VideoPlayer({
             >
               <div
                 ref={progressBarRef}
-                className="absolute inset-y-0 left-0 bg-[#22c55e] rounded-full"
+                className="absolute inset-y-0 left-0 bg-[#3b82f6] rounded-full"
                 style={{ width: "0%" }}
               />
               <div
@@ -191,7 +202,37 @@ export function VideoPlayer({
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-xs text-white/80 font-medium">{playbackSpeed}x</span>
+
+                {/* === 核心修复：倍速悬浮菜单 === */}
+                <div className="relative group/speed flex items-center">
+                  <button className="text-xs text-white/80 font-medium hover:text-white transition-colors px-1 py-1">
+                    {playbackSpeed}x
+                  </button>
+                  
+                  {/* 外层增加 pb-2 (padding-bottom) 作为鼠标悬停的隐形桥梁，里层做黑色背景 */}
+                  <div className="absolute bottom-full right-0 pb-2 hidden group-hover/speed:block z-50">
+                    <div className="flex flex-col bg-black/90 backdrop-blur-sm rounded-lg py-1 shadow-lg pointer-events-auto min-w-[60px]">
+                      {[2, 1.5, 1.25, 1, 0.75, 0.5].map((s) => (
+                        <button
+                          key={s}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            onSpeedChange?.(s)
+                          }}
+                          className={`px-3 py-1.5 text-xs text-center transition-colors ${
+                            playbackSpeed === s 
+                              ? "text-[#3b82f6] font-bold bg-white/10" 
+                              : "text-white/80 hover:bg-white/20 hover:text-white"
+                          }`}
+                        >
+                          {s}x
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>                
+                {/* ================================= */}
+
                 <button
                   className="p-1 text-white hover:text-white/80 transition-colors"
                   aria-label="全屏"

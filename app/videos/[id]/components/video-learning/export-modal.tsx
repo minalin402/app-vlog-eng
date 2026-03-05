@@ -2,15 +2,76 @@
 
 import { useState } from "react"
 import { X } from "lucide-react"
-import { subtitles } from "@/lib/video-data"
+import { type SubtitleItem } from "@/lib/video-data"
 
 interface ExportModalProps {
   open: boolean
   onClose: () => void
+  subtitles: SubtitleItem[]
+  title: string
 }
 
-export function ExportModal({ open, onClose }: ExportModalProps) {
+// 清洗文本中的标记符
+function cleanMarkup(text: string): string {
+  // 匹配 {{w|v1|word}}, {{p|p1|phrase}}, {{e|e1|expression}} 格式的标记
+  return text.replace(/\{\{[wpe]\|[^|]+\|([^}]+)\}\}/g, '$1')
+}
+
+// 生成导出用的HTML
+function generateExportHtml(
+  subtitles: SubtitleItem[],
+  title: string,
+  mode: "bilingual" | "english" | "chinese"
+): string {
+  const html = `
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <title>字幕导出</title>
+    </head>
+    <body>
+      <h1 style="text-align:center; margin-bottom: 24px;">${title} - 学习笔记</h1>
+      ${subtitles.map(sub => {
+        const englishText = sub.english || sub.en || ''
+        const chineseText = sub.chinese || sub.zh || ''
+        
+        return `
+        <p style="color:#666; font-size:12px; margin-bottom:4px;">${sub.timeLabel || ''}</p>
+        ${(mode === "bilingual" || mode === "english") && englishText ? 
+          `<p style="margin-top:0; margin-bottom:${mode === "bilingual" ? "4" : "16"}px;">${cleanMarkup(englishText)}</p>` : 
+          ''}
+        ${(mode === "bilingual" || mode === "chinese") && chineseText ? 
+          `<p style="margin-top:0; margin-bottom:16px; color:#666;">${cleanMarkup(chineseText)}</p>` : 
+          ''}
+      `
+      }).join('')}
+    </body>
+    </html>
+  `
+  return html
+}
+
+// 触发下载
+function downloadAsWord(html: string, title: string) {
+  const blob = new Blob([html], { type: 'application/msword' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `${title} - 学习笔记.doc`
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+}
+
+export function ExportModal({ open, onClose, subtitles, title }: ExportModalProps) {
   const [exportMode, setExportMode] = useState<"bilingual" | "english" | "chinese">("bilingual")
+
+  // === 核心修改：前端 DOM 兜底取标题 ===
+  // 优先用传进来的 title。如果没传，直接去网页上抓取 <h1> 标签的文字
+  const displayTitle = title || 
+    (typeof document !== 'undefined' ? (document.querySelector('h1')?.textContent?.trim() || document.title) : '') 
+    || '视频学习笔记'
 
   if (!open) return null
 
@@ -21,7 +82,7 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
         {/* Header */}
         <div className="flex items-center justify-between px-6 pt-5 pb-3">
           <h2 className="text-lg font-bold text-foreground">
-            谷爱凌：霸气回应质疑 - 导出Word文档
+            {displayTitle} - 导出Word文档
           </h2>
           <button
             onClick={onClose}
@@ -59,22 +120,27 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
         <div className="flex-1 overflow-y-auto px-6 pb-4">
           <div className="bg-muted/50 rounded-xl p-6">
             <h3 className="text-lg font-bold text-foreground text-center mb-4">
-              谷爱凌：霸气回应质疑 - 学习笔记
+              {displayTitle} - 学习笔记
             </h3>
             <div className="h-px bg-border/50" />
-            {subtitles.map((sub) => (
-              <div key={sub.id} className="py-4 border-b border-border/30 last:border-b-0">
-                <p className="text-xs text-muted-foreground mb-2 font-mono">{sub.timeLabel}</p>
-                {(exportMode === "bilingual" || exportMode === "english") && (
-                  <p className="text-sm text-foreground leading-relaxed">{sub.english}</p>
-                )}
-                {(exportMode === "bilingual" || exportMode === "chinese") && (
-                  <p className={`text-sm text-muted-foreground leading-relaxed ${exportMode === "bilingual" ? "mt-1" : ""}`}>
-                    {sub.chinese}
-                  </p>
-                )}
-              </div>
-            ))}
+            {subtitles.map((sub) => {
+              const englishText = sub.english || sub.en || ''
+              const chineseText = sub.chinese || sub.zh || ''
+              
+              return (
+                <div key={sub.id} className="py-4 border-b border-border/30 last:border-b-0">
+                  <p className="text-xs text-muted-foreground mb-2 font-mono">{sub.timeLabel}</p>
+                  {(exportMode === "bilingual" || exportMode === "english") && englishText && (
+                    <p className="text-sm text-foreground leading-relaxed">{cleanMarkup(englishText)}</p>
+                  )}
+                  {(exportMode === "bilingual" || exportMode === "chinese") && chineseText && (
+                    <p className={`text-sm text-muted-foreground leading-relaxed ${exportMode === "bilingual" ? "mt-1" : ""}`}>
+                      {cleanMarkup(chineseText)}
+                    </p>
+                  )}
+                </div>
+              )
+            })}
           </div>
         </div>
 
@@ -86,7 +152,10 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
           >
             取消
           </button>
-          <button className="px-6 py-2 rounded-lg bg-[#22c55e] text-[#ffffff] text-sm font-medium hover:bg-[#16a34a] transition-colors">
+          <button 
+            onClick={() => downloadAsWord(generateExportHtml(subtitles, displayTitle, exportMode), displayTitle)}
+            className="px-6 py-2 rounded-lg bg-[#3b82f6] text-[#ffffff] text-sm font-medium hover:bg-[#16a34a] transition-colors"
+          >
             导出Word
           </button>
         </div>

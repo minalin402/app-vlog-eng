@@ -33,6 +33,7 @@ interface SubtitleToolbarProps {
   practiceMode: "none" | "shadowing" | "fill"
   onPracticeModeChange: (mode: "none" | "shadowing" | "fill") => void
   onReset: () => void
+  showResetButton: boolean
 }
 
 const LOOP_COUNT_OPTIONS = [1, 2, 3, 4, 5, 0] // 0 = infinite
@@ -84,7 +85,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
       aria-checked={checked}
       onClick={() => onChange(!checked)}
       className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors ${
-        checked ? "bg-[#22c55e]" : "bg-muted-foreground/30"
+        checked ? "bg-[#3b82f6]" : "bg-muted-foreground/30"
       }`}
     >
       <span
@@ -112,6 +113,7 @@ export function SubtitleToolbar({
   practiceMode,
   onPracticeModeChange,
   onReset,
+  showResetButton,
 }: SubtitleToolbarProps) {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -136,15 +138,17 @@ export function SubtitleToolbar({
       <div className="flex items-center justify-between px-4 py-3">
         <h2 className="font-semibold text-foreground text-base">动态字幕</h2>
         <div className="flex items-center gap-1">
-          {/* Reset */}
-          <ToolbarButton
-            onClick={onReset}
-            label="重新学习"
-            tooltip="重新学习"
-            className="p-2 rounded-lg text-[#ef4444] hover:bg-accent transition-colors"
-          >
-            <RotateCcw className="size-4" />
-          </ToolbarButton>
+          {/* Reset - 仅在已学习状态下显示 */}
+          {showResetButton && (
+            <ToolbarButton
+              onClick={onReset}
+              label="重新学习"
+              tooltip="重新学习"
+              className="p-2 rounded-lg text-[#ef4444] hover:bg-accent transition-colors"
+            >
+              <RotateCcw className="size-4" />
+            </ToolbarButton>
+          )}
 
           {/* Translate dropdown */}
           <div className="relative">
@@ -167,7 +171,7 @@ export function SubtitleToolbar({
                     onClick={() => { onSubtitleModeChange(item.key); setOpenDropdown(null) }}
                   >
                     <span>{item.label}</span>
-                    {subtitleMode === item.key && <Check className="size-4 text-[#22c55e] ml-auto" />}
+                    {subtitleMode === item.key && <Check className="size-4 text-[#3b82f6] ml-auto" />}
                   </button>
                 ))}
               </div>
@@ -193,7 +197,7 @@ export function SubtitleToolbar({
                 >
                   <PlayCircle className="size-4" />
                   <span>单集播放</span>
-                  {playbackMode === "single" && <Check className="size-4 text-[#22c55e] ml-auto" />}
+                  {playbackMode === "single" && <Check className="size-4 text-[#3b82f6] ml-auto" />}
                 </button>
                 <button
                   className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-accent transition-colors text-foreground"
@@ -201,7 +205,7 @@ export function SubtitleToolbar({
                 >
                   <RefreshCw className="size-4" />
                   <span>单集循环</span>
-                  {playbackMode === "singleLoop" && <Check className="size-4 text-[#22c55e] ml-auto" />}
+                  {playbackMode === "singleLoop" && <Check className="size-4 text-[#3b82f6] ml-auto" />}
                 </button>
 
                 <p className="px-3 py-1.5 text-xs text-muted-foreground font-medium mt-1">句子</p>
@@ -211,7 +215,7 @@ export function SubtitleToolbar({
                 >
                   <PlayCircle className="size-4" />
                   <span>连续播放</span>
-                  {sentenceMode === "continuous" && <Check className="size-4 text-[#22c55e] ml-auto" />}
+                  {sentenceMode === "continuous" && <Check className="size-4 text-[#3b82f6] ml-auto" />}
                 </button>
                 <button
                   className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-accent transition-colors text-foreground"
@@ -219,7 +223,7 @@ export function SubtitleToolbar({
                 >
                   <RefreshCw className="size-4" />
                   <span>单句循环</span>
-                  {sentenceMode === "sentenceLoop" && <Check className="size-4 text-[#22c55e] ml-auto" />}
+                  {sentenceMode === "sentenceLoop" && <Check className="size-4 text-[#3b82f6] ml-auto" />}
                 </button>
 
                 {/* Loop config — only when sentenceLoop is active */}
@@ -231,7 +235,7 @@ export function SubtitleToolbar({
                         <select
                           value={loopCount}
                           onChange={(e) => onLoopCountChange(Number(e.target.value))}
-                          className="text-xs font-medium text-foreground bg-muted/60 rounded-lg px-2 py-1 pr-5 appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#22c55e]"
+                          className="text-xs font-medium text-foreground bg-muted/60 rounded-lg px-2 py-1 pr-5 appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#3b82f6]"
                         >
                           {LOOP_COUNT_OPTIONS.map((n) => (
                             <option key={n} value={n}>{loopCountLabel(n)}</option>
@@ -268,7 +272,7 @@ export function SubtitleToolbar({
                 >
                   <Mic className="size-4" />
                   <span>跟读练习</span>
-                  {practiceMode === "shadowing" && <Check className="size-4 text-[#22c55e] ml-auto" />}
+                  {practiceMode === "shadowing" && <Check className="size-4 text-[#3b82f6] ml-auto" />}
                 </button>
                 <button
                   className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-accent transition-colors text-foreground"
@@ -276,7 +280,7 @@ export function SubtitleToolbar({
                 >
                   <FileText className="size-4" />
                   <span>填空练习</span>
-                  {practiceMode === "fill" && <Check className="size-4 text-[#22c55e] ml-auto" />}
+                  {practiceMode === "fill" && <Check className="size-4 text-[#3b82f6] ml-auto" />}
                 </button>
                 <button
                   className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-accent transition-colors text-foreground"
@@ -284,7 +288,7 @@ export function SubtitleToolbar({
                 >
                   <X className="size-4" />
                   <span>关闭练习</span>
-                  {practiceMode === "none" && <Check className="size-4 text-[#22c55e] ml-auto" />}
+                  {practiceMode === "none" && <Check className="size-4 text-[#3b82f6] ml-auto" />}
                 </button>
               </div>
             )}
@@ -310,7 +314,7 @@ export function SubtitleToolbar({
             <select
               value={loopCount}
               onChange={(e) => onLoopCountChange(Number(e.target.value))}
-              className="text-xs font-semibold text-foreground bg-muted/60 rounded-lg px-2.5 py-1 pr-6 appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#22c55e]"
+              className="text-xs font-semibold text-foreground bg-muted/60 rounded-lg px-2.5 py-1 pr-6 appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#3b82f6]"
             >
               {LOOP_COUNT_OPTIONS.map((n) => (
                 <option key={n} value={n}>{loopCountLabel(n)}</option>

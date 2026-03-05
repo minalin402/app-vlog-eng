@@ -1,8 +1,13 @@
 "use client"
 
 import { BookOpen } from "lucide-react"
+import { VideoDetail } from "@/lib/video-api"
 
-export function VideoDescription() {
+interface VideoDescriptionProps {
+  video?: VideoDetail | null;
+}
+
+export function VideoDescription({ video }: VideoDescriptionProps) {
   return (
     <div className="bg-card rounded-2xl shadow-md p-4">
       <div className="flex items-center gap-2 mb-2">
@@ -10,8 +15,20 @@ export function VideoDescription() {
         <h2 className="font-semibold text-foreground">视频简介</h2>
       </div>
       <p className="text-sm text-muted-foreground leading-relaxed">
-        面对外界高期待，英语里怎么既直白又不失分寸？谷爱凌在这段采访里给了非常标准的示范。除了观点，你还能学到 to be quite frank with you、have never been done before 这类高频可迁移表达。
+        {video?.description || '加载中...'}
+        {/* ✨ 在描述文字的末尾加上这段代码 */}
+        {video.originalYoutubeUrl && (
+          <a
+            href={video.originalYoutubeUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-300 hover:text-blue-600 hover:underline ml-2 font-medium inline-flex items-center"
+          >
+            原视频↗
+          </a>
+        )}
       </p>
     </div>
   )
 }
+
