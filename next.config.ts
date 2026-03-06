@@ -15,6 +15,7 @@ const config = {
       'assets.engvloglab.com',
       'media.engvloglab.com',
       'images.unsplash.com', // 👈 加上这一行
+      'https://pub-a825fbb95e6e4859a99b9ec4adf6cf55.r2.dev', // 👈 ✨ 核心修改：把你 Cloudflare 的专属域名加上！
       process.env.NEXT_PUBLIC_SUPABASE_URL?.replace('https://', '') || '',
     ],
   },
