@@ -7,6 +7,7 @@ export interface VideoDetail {
   duration: string;
   difficulty: string;
   videoUrl: string;
+  original_youtube_url?: string;
   subtitles: SubtitleItem[];
   vocabularies?: VocabItem[];
   phrases?: PhraseItem[];
@@ -90,6 +91,7 @@ export async function getVideoDetail(id: string): Promise<VideoDetail | null> {
       duration: video.duration,
       difficulty: video.difficulty,
       videoUrl: video.video_url,
+      original_youtube_url: video.original_youtube_url,
       subtitles: subtitles?.map(s => ({
         id: s.id,
         startTime: s.start_time,
