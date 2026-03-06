@@ -2,6 +2,18 @@
 
 import { Volume2, Bookmark } from "lucide-react"
 
+// 🎙️ 独立的文本转语音助手
+const playTTS = (text: string, e?: React.MouseEvent) => {
+  if (e) e.stopPropagation()
+  if (typeof window !== "undefined" && "speechSynthesis" in window) {
+    window.speechSynthesis.cancel()
+    const utterance = new SpeechSynthesisUtterance(text)
+    utterance.lang = "en-US"
+    utterance.rate = 0.85
+    window.speechSynthesis.speak(utterance)
+  }
+}
+
 export function PhraseCard({ item, hideChinese, isFavorited, onToggleFav }: { item: any; hideChinese: boolean; isFavorited: boolean; onToggleFav: () => void }) {
   return (
     <div className="bg-card border border-border rounded-2xl p-6 shadow-sm flex flex-col h-full hover:shadow-md transition-shadow relative overflow-hidden">
@@ -17,15 +29,20 @@ export function PhraseCard({ item, hideChinese, isFavorited, onToggleFav }: { it
 
       <div className="flex items-center gap-3 mb-5">
         {item.phonetic && <span className="text-sm text-muted-foreground font-mono">{item.phonetic}</span>}
-        <button className="p-1.5 rounded-full bg-accent hover:bg-accent/80 transition-colors">
-          <Volume2 className="size-4 text-foreground" />
+        {/* ✨ 新增：绑定发音事件 */}
+        <button 
+          onClick={(e) => playTTS(item.phrase, e)} 
+          className="p-1.5 rounded-full bg-blue-50 hover:bg-blue-100 transition-colors group"
+          title="点击发音"
+        >
+          <Volume2 className="size-4 text-blue-500 group-hover:text-blue-600" />
         </button>
       </div>
 
       <div className="space-y-4 mt-auto flex-1">
         <div>
           <p className="text-xs text-muted-foreground mb-1 font-medium">中文释义</p>
-          <p className={`text-base text-foreground leading-relaxed font-medium ${hideChinese ? "blur-sm select-none" : ""}`}>
+          <p className={`text-base text-foreground leading-relaxed font-medium transition-all duration-300 ${hideChinese ? "blur-sm select-none opacity-50" : ""}`}>
             {item.chinese_definition || item.meaningZh}
           </p>
         </div>
@@ -39,13 +56,12 @@ export function PhraseCard({ item, hideChinese, isFavorited, onToggleFav }: { it
           </div>
         )}
 
-        {/* 兼容旧版的例句 */}
         {item.examples && item.examples.length > 0 && (
           <div className="flex flex-col gap-2 mt-2">
             {item.examples.map((ex: any, i: number) => (
               <div key={i} className="border-l-4 border-blue-500 bg-blue-50 dark:bg-blue-950/30 rounded-r-lg px-3 py-2">
                 <p className="text-sm text-foreground italic">{ex.en}</p>
-                <p className={`text-xs text-muted-foreground mt-1 ${hideChinese ? "blur-sm select-none" : ""}`}>{ex.zh}</p>
+                <p className={`text-xs text-muted-foreground mt-1 transition-all duration-300 ${hideChinese ? "blur-sm select-none opacity-50" : ""}`}>{ex.zh}</p>
               </div>
             ))}
           </div>

@@ -27,7 +27,7 @@ export function VideoSidebar({ videos, activeVideoId, onSelectVideo }: VideoSide
           <ChevronLeft className="size-4" /> 返回首页
         </button>
         
-        <h2 className="text-lg font-bold text-foreground mb-3">视频库</h2>
+        <h2 className="text-lg font-bold text-foreground mb-3">视频列表</h2>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <input
