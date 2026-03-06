@@ -68,6 +68,7 @@ async function seedDatabase() {
           creator: mockData.creator, 
           accent: mockData.accent,
           cover_url: coverUrl,
+          original_youtube_url: mockData.original_youtube_url,  // 👈 新增这一行！
           created_at: mockData.publishDate ? new Date(mockData.publishDate).toISOString() : new Date().toISOString()
         })
 

@@ -19,7 +19,7 @@ import { LearningGuide } from "@/components/learning-guide"
 import { useAuth } from "@/lib/auth-context"
 
 const navLinks = [
-  { label: "视频库", icon: Video, href: "/" },
+  //{ label: "视频库", icon: Video, href: "/" },
   { label: "学习记录", icon: BookOpen, href: "/records" },
   { label: "英语卡片", icon: Layers, href: "/vocabulary" },
 ]

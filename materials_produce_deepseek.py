@@ -39,7 +39,8 @@ def load_clips_csv(csv_path):
                     'creator': cleaned_row.get('uploader', '').strip(),
                     'note': cleaned_row.get('note', '').strip(),
                     # ✨ 新增：尝试从 CSV 读 'date' 列，读不到就用今天的日期
-                    'publishDate': cleaned_row.get('date', datetime.now().strftime("%Y-%m-%d")).strip()
+                    'publishDate': cleaned_row.get('date', datetime.now().strftime("%Y-%m-%d")).strip(),
+                    'original_youtube_url': cleaned_row.get('original_youtube_url', '').strip(),
                 }
     return clips_info
 
@@ -254,7 +255,7 @@ def ai_extract_knowledge(text):
 # ----------------- 主流水线 -----------------
 def process_folder(folder_path, clips_csv_data):
     folder_name = os.path.basename(folder_path)
-    
+    cf_base_url = "https://pub-a825fbb95e6e4859a99b9ec4adf6cf55.r2.dev" # 🌟 填入你专属的 Cloudflare R2 前缀 (不要带末尾的斜杠 /)
     # 【核心修改】：寻找以 clip_id_ 开头的文件夹进行匹配
     csv_info = None
     for cid, info in clips_csv_data.items():
@@ -320,8 +321,9 @@ def process_folder(folder_path, clips_csv_data):
         "duration": format_duration(duration_sec),
         "difficulty": csv_info['difficulty'],
         "description": ai_data.get("description", ""),
-        "coverUrl": f"/content/{folder_name}/cover.jpg", # 🌟 封面图指向带后缀的真实文件夹名
-        "videoUrl": csv_info['videoUrl'],
+        "coverUrl": f"{cf_base_url}/{folder_name}/cover.jpg",
+        "videoUrl": f"{cf_base_url}/{folder_name}/video.mp4",
+        "original_youtube_url": csv_info.get('original_youtube_url', ''),
         "subtitles": subtitles,
         "vocabularies": ai_data.get("vocabularies", []),
         "phrases": ai_data.get("phrases", []),

@@ -21,6 +21,8 @@ export interface Video {
   updateTime: string
   /** 封面图链接 */
   coverUrl: string
+  /** YouTube 原视频链接 */
+  original_youtube_url?: string
   /** 当前用户是否已收藏 */
   isFavorite: boolean
   /** 学习状态（供筛选使用） */
@@ -42,6 +44,7 @@ export const mockVideos: Video[] = [
     difficulty: "⭐⭐",
     updateTime: "2024-02-14T08:00:00Z",
     coverUrl: "https://images.unsplash.com/photo-1551698618-1dfe5d97d256?w=640&q=80",
+    original_youtube_url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", // 👈 随便塞一个测试链接
     isFavorite: true,
     status: "learned",
   },
@@ -57,6 +60,7 @@ export const mockVideos: Video[] = [
     difficulty: "⭐⭐",
     updateTime: "2024-03-01T10:00:00Z",
     coverUrl: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=640&q=80",
+    original_youtube_url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", // 👈 随便塞一个测试链接
     isFavorite: false,
     status: "learned",
   },
@@ -72,6 +76,7 @@ export const mockVideos: Video[] = [
     difficulty: "⭐",
     updateTime: "2024-01-20T09:00:00Z",
     coverUrl: "https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=640&q=80",
+    original_youtube_url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", // 👈 随便塞一个测试链接
     isFavorite: false,
     status: "unlearned",
   },
@@ -87,6 +92,7 @@ export const mockVideos: Video[] = [
     difficulty: "⭐",
     updateTime: "2024-01-15T12:00:00Z",
     coverUrl: "https://images.unsplash.com/photo-1525625293386-3f8f99389edd?w=640&q=80",
+    original_youtube_url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", // 👈 随便塞一个测试链接
     isFavorite: true,
     status: "learned",
   },
@@ -102,6 +108,7 @@ export const mockVideos: Video[] = [
     difficulty: "⭐",
     updateTime: "2024-04-10T07:30:00Z",
     coverUrl: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=640&q=80",
+    original_youtube_url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", // 👈 随便塞一个测试链接
     isFavorite: false,
     status: "unlearned",
   },
@@ -117,6 +124,7 @@ export const mockVideos: Video[] = [
     difficulty: "⭐⭐⭐⭐",
     updateTime: "2024-01-25T11:00:00Z",
     coverUrl: "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=640&q=80",
+    original_youtube_url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", // 👈 随便塞一个测试链接
     isFavorite: false,
     status: "unlearned",
   },
@@ -132,6 +140,7 @@ export const mockVideos: Video[] = [
     difficulty: "⭐",
     updateTime: "2024-05-08T09:15:00Z",
     coverUrl: "https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=640&q=80",
+    original_youtube_url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", // 👈 随便塞一个测试链接
     isFavorite: false,
     status: "unlearned",
   },
@@ -147,6 +156,7 @@ export const mockVideos: Video[] = [
     difficulty: "⭐⭐⭐",
     updateTime: "2024-03-22T14:00:00Z",
     coverUrl: "https://images.unsplash.com/photo-1563245372-f21724e3856d?w=640&q=80",
+    original_youtube_url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", // 👈 随便塞一个测试链接
     isFavorite: false,
     status: "unlearned",
   },
@@ -162,6 +172,7 @@ export const mockVideos: Video[] = [
     difficulty: "⭐⭐⭐⭐",
     updateTime: "2024-02-28T16:00:00Z",
     coverUrl: "https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=640&q=80",
+    original_youtube_url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", // 👈 随便塞一个测试链接
     isFavorite: false,
     status: "unlearned",
   },
@@ -177,6 +188,7 @@ export const mockVideos: Video[] = [
     difficulty: "⭐⭐⭐⭐⭐",
     updateTime: "2024-01-10T08:00:00Z",
     coverUrl: "https://images.unsplash.com/photo-1546026423-cc4642628d2b?w=640&q=80",
+    original_youtube_url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", // 👈 随便塞一个测试链接
     isFavorite: true,
     status: "unlearned",
   },
@@ -192,6 +204,7 @@ export const mockVideos: Video[] = [
     difficulty: "⭐⭐",
     updateTime: "2024-04-01T10:00:00Z",
     coverUrl: "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=640&q=80",
+    original_youtube_url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", // 👈 随便塞一个测试链接
     isFavorite: false,
     status: "learned",
   },
@@ -207,6 +220,7 @@ export const mockVideos: Video[] = [
     difficulty: "⭐⭐⭐⭐⭐",
     updateTime: "2024-02-05T09:00:00Z",
     coverUrl: "https://images.unsplash.com/photo-1475721027785-f74eccf877e2?w=640&q=80",
+    original_youtube_url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", // 👈 随便塞一个测试链接
     isFavorite: false,
     status: "unlearned",
   },
@@ -222,6 +236,7 @@ export const mockVideos: Video[] = [
     difficulty: "⭐⭐",
     updateTime: "2024-05-20T11:00:00Z",
     coverUrl: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=640&q=80",
+    original_youtube_url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", // 👈 随便塞一个测试链接
     isFavorite: true,
     status: "learned",
   },
@@ -237,6 +252,7 @@ export const mockVideos: Video[] = [
     difficulty: "⭐⭐⭐⭐",
     updateTime: "2024-03-15T15:00:00Z",
     coverUrl: "https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=640&q=80",
+    original_youtube_url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", // 👈 随便塞一个测试链接
     isFavorite: false,
     status: "unlearned",
   },
@@ -252,6 +268,7 @@ export const mockVideos: Video[] = [
     difficulty: "⭐⭐⭐",
     updateTime: "2024-01-30T08:00:00Z",
     coverUrl: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=640&q=80",
+    original_youtube_url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", // 👈 随便塞一个测试链接
     isFavorite: false,
     status: "unlearned",
   },

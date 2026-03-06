@@ -187,12 +187,12 @@ export default function VideoLearningPage() {
         duration: videoRow.duration,       // ✨ 补上：视频时长
         difficulty: videoRow.difficulty,   // ✨ 补上：视频难度
         videoUrl: localVideoUrl || cleanYoutubeUrl, // ✨ 优先给播放器喂本地 mp4！
-        originalYoutubeUrl: cleanYoutubeUrl, // ✨ 存一份干净的原链接备用
+        original_youtube_url: cleanYoutubeUrl, // ✨ 存一份干净的原链接备用
         subtitles: formattedSubtitles,
         vocabularies,
         phrases,
         expressions
-      } as VideoDetail & { originalYoutubeUrl: string } // 强行扩展一下类型
+      } as VideoDetail & { original_youtube_url: string } // 强行扩展一下类型
     }
 
     // ✨ 3. 安全查询：绕过那个会导致整个页面崩溃的外部 API
@@ -844,10 +844,10 @@ const rafCallback = useCallback(() => {
          
 
           {/* ✨ 新增：藏在字幕列表最底部的“隐形”链接 */}
-            {(videoData as any)?.originalYoutubeUrl && (
+            {(videoData as any)?.original_youtube_url && (
               <div className="mt-6 mb-6 flex justify-center">
                 <a
-                  href={(videoData as any)?.originalYoutubeUrl}
+                  href={(videoData as any)?.original_youtube_url}
                   target="_blank"
                   rel="noopener noreferrer"
                   // 1. text-muted-foreground/60: 颜色深了一倍，确保在各种背景下都能看清
