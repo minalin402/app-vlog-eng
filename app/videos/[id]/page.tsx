@@ -147,7 +147,7 @@ export default function VideoLearningPage() {
       const { data: vocabData } = await supabase.from('vocabulary_items').select('*').eq('video_id', id)
 
       // 🧹 1. 清洗 YouTube URL，去损坏的尾巴
-      let cleanYoutubeUrl = videoRow.video_url || ""
+      let cleanYoutubeUrl = videoRow.original_youtube_url || ""
       if (cleanYoutubeUrl.endsWith("&t") || cleanYoutubeUrl.endsWith("&t=")) {
         cleanYoutubeUrl = cleanYoutubeUrl.split("&t")[0]
       }
@@ -186,8 +186,8 @@ export default function VideoLearningPage() {
         description: videoRow.description,
         duration: videoRow.duration,       // ✨ 补上：视频时长
         difficulty: videoRow.difficulty,   // ✨ 补上：视频难度
-        videoUrl: localVideoUrl || cleanYoutubeUrl, // ✨ 优先给播放器喂本地 mp4！
-        original_youtube_url: cleanYoutubeUrl, // ✨ 存一份干净的原链接备用
+        videoUrl: videoRow.video_url,
+        original_youtube_url: cleanYoutubeUrl,// ✨ 存一份干净的原链接备用
         subtitles: formattedSubtitles,
         vocabularies,
         phrases,
