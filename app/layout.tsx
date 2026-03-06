@@ -4,6 +4,8 @@ import "./globals.css"
 import { ErrorBoundaryWrapper } from "./components/error-boundary"
 import { AuthProvider } from "@/lib/auth-context"
 import { Toaster } from "sonner"
+// ✨ 1. 引入 Analytics 组件
+import { Analytics } from "@vercel/analytics/react"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,6 +34,8 @@ export default function RootLayout({
           <AuthProvider>
             {children}
             <Toaster />
+            {/* ✨ 2. 在 AuthProvider 内部（或外部均可）加上探针 */}
+            <Analytics />
           </AuthProvider>
         </ErrorBoundaryWrapper>
       </body>
