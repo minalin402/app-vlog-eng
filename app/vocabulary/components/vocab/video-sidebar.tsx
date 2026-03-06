@@ -21,7 +21,7 @@ export function VideoSidebar({ videos, activeVideoId, onSelectVideo }: VideoSide
       <div className="p-4 border-b border-border">
         {/* 返回首页按钮 */}
         <button 
-          onClick={() => router.push("http://localhost:3000")}
+          onClick={() => router.push("/")}
           className="flex items-center gap-1 mb-4 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
         >
           <ChevronLeft className="size-4" /> 返回首页
@@ -59,7 +59,7 @@ export function VideoSidebar({ videos, activeVideoId, onSelectVideo }: VideoSide
             
             {/* 点击图标，直接跳转到视频学习页 */}
             <button
-              onClick={() => router.push(`http://localhost:3000/videos/${video.id}`)}
+              onClick={() => router.push(`/videos/${video.id}`)}
               className="p-2 shrink-0 text-muted-foreground hover:text-[#3b82f6] hover:bg-[#3b82f6]/10 rounded-md transition-colors"
               title="前往学习该视频"
             >

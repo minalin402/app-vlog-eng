@@ -38,7 +38,7 @@ export function PageHeader({ activeTab, onTabChange }: PageHeaderProps) {
         <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4">
           {/* === 修改 1：点击返回首页 === */}
           <button 
-            onClick={() => router.push("http://localhost:3000")}
+            onClick={() => router.push("/")}
             className="flex items-center text-foreground transition-colors hover:text-muted-foreground"
           >
             <ChevronLeft className="h-5 w-5 shrink-0" />

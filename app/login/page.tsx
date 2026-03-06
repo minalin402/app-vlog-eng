@@ -162,7 +162,7 @@ export default function LoginPage() {
         <div className="text-center mt-6 pt-5 border-t border-slate-100">
           <span className="text-sm text-slate-500">还没有账户？</span>
           <a
-            href="http://localhost:3000/active"
+            href="/active"
             className="text-sm text-blue-500 hover:text-violet-600 ml-1 font-medium transition-colors duration-150"
           >
             立即注册

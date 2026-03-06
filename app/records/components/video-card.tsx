@@ -24,7 +24,7 @@ export function VideoCard({ video, onToggleFavorite }: VideoCardProps) {
   return (
     <div 
       className="group relative rounded-xl bg-card shadow-sm transition-shadow hover:shadow-md cursor-pointer"
-      onClick={() => router.push(`http://localhost:3000/videos/${video.id}`)}
+      onClick={() => router.push(`/videos/${video.id}`)}
     >
       {/* 封面图区域 */}
       <div className="relative aspect-video w-full overflow-hidden rounded-t-xl">
