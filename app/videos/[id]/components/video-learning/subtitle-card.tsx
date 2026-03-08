@@ -285,9 +285,16 @@ export function SubtitleCard({
   }
 
   return (
-    <div className="px-4 py-3 border-l-[3px] border-transparent cursor-pointer hover:bg-accent/40" onClick={handlePlaybackClick}>
-      <button onClick={handlePlaybackClick} className="text-xs font-mono mb-1 block text-muted-foreground">{timeLabel}</button>
+    // ✨ 1. 缩小容器内边距：从 px-4 py-3 改成了 px-3 py-2 (左右和上下都收紧了)
+    <div className="px-3 py-2 border-l-[3px] border-transparent cursor-pointer hover:bg-accent/40" onClick={handlePlaybackClick}>
+      
+      {/* ✨ 2. 缩小时间标签的下边距：从 mb-1 改成了 mb-0.5 */}
+      <button onClick={handlePlaybackClick} className="text-xs font-mono mb-0.5 block text-muted-foreground">
+        {timeLabel}
+      </button>
+      
       {(subtitleMode === "bilingual" || subtitleMode === "english") && (
+        // ✨ 3. 压紧英文行高：从 leading-relaxed 改成了 leading-snug
         <p className={`${fontSizeClass} font-medium text-foreground leading-relaxed`}>
           {tokens ? (
             <RenderTokenizedEnglish
@@ -300,9 +307,14 @@ export function SubtitleCard({
           )}
         </p>
       )}
+      
       {(subtitleMode === "bilingual" || subtitleMode === "chinese") && (
-        <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{chineseText}</p>
+        // ✨ 4. 压紧中文行高与上边距：从 mt-1 改为 mt-0.5，leading-relaxed 改为 leading-snug
+        <p className="text-xs text-muted-foreground mt-1 leading-snug">
+          {chineseText}
+        </p>
       )}
+      
       {practiceMode === "shadowing" && onPlaySegment && (
         <ShadowingConsole videoId={videoId} subtitleId={subtitle.id} startTime={subtitle.startTime} endTime={subtitle.endTime} onPlayOriginal={onPlaySegment} onPauseVideo={onPauseVideo} />
       )}

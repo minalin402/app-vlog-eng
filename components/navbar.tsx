@@ -17,7 +17,6 @@ import { LearningStats } from "@/components/learning-stats"
 import { SidebarCalendar } from "@/components/sidebar-calendar"
 import { LearningGuide } from "@/components/learning-guide"
 import { useAuth } from "@/lib/auth-context"
-
 const navLinks = [
   //{ label: "视频库", icon: Video, href: "/" },
   { label: "学习记录", icon: BookOpen, href: "/records" },
@@ -134,6 +133,7 @@ export function Navbar() {
 
               {/* Sidebar content in drawer */}
               <div className="flex flex-col gap-4 p-4">
+                <LearningStats />
                 <SidebarCalendar />
                 <LearningGuide />
               </div>

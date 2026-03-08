@@ -386,32 +386,32 @@ const rafCallback = useCallback(() => {
 
     const activeId = activeSub?.id ?? null
 
-    // Gate: only touch DOM when the active sentence actually changes
-    if (activeId !== lastHighlightedIdRef.current) {
-      lastHighlightedIdRef.current = activeId
+// Gate: only touch DOM when the active sentence actually changes
+      if (activeId !== lastHighlightedIdRef.current) {
+        lastHighlightedIdRef.current = activeId
 
-      // Raw DOM sweep — zero React involvement
-      const rows = document.querySelectorAll<HTMLElement>(".subtitle-line")
-      let activeEl: HTMLElement | null = null
+        // Raw DOM sweep — zero React involvement
+        const rows = document.querySelectorAll<HTMLElement>(".subtitle-line")
+        let activeEl: HTMLElement | null = null
 
-      rows.forEach((row) => {
-        const isActive = activeSub !== null && row.dataset.id === String(activeSub.id)
-        if (isActive) {
-          row.classList.add("is-subtitle-active")
-          activeEl = row
-        } else {
-          row.classList.remove("is-subtitle-active")
+        rows.forEach((row) => {
+          const isActive = activeSub !== null && row.dataset.id === String(activeSub.id)
+          if (isActive) {
+            row.classList.add("is-subtitle-active")
+            activeEl = row
+          } else {
+            row.classList.remove("is-subtitle-active")
+          }
+        })
+
+        // ✨ 核心修改：把 block 属性改为 "start"，让高亮句永远对齐容器顶部
+        if (activeEl) {
+          (activeEl as HTMLElement).scrollIntoView({ behavior: "smooth", block: "start" })
         }
-      })
 
-      // Scroll active row into view — once per sentence switch
-      if (activeEl) {
-        (activeEl as HTMLElement).scrollIntoView({ behavior: "smooth", block: "center" })
+        // Reset loop counter when switching to a new sentence
+        currentLoopCountRef.current = 0
       }
-
-      // Reset loop counter when switching to a new sentence
-      currentLoopCountRef.current = 0
-    }
 
     // ── 3. 逻辑跳转拦截 (修复引擎假死) ──────────────────────────────────
     if (isSeekingRef.current) {
@@ -761,7 +761,7 @@ const rafCallback = useCallback(() => {
           
           {/* 1. 全屏视频模式：增加边距和圆角卡片效果 */}
           {mobileVideoMode === "full" && (
-            <div className="sticky top-0 z-30 bg-background shrink-0 px-3 pt-2 pb-1">
+            <div className="sticky top-0 z-30 bg-background shrink-0 px-3 pt-0 -mt-2 pb-1">
               <div className="rounded-xl overflow-hidden shadow-sm border border-border/40">
                 <VideoPlayer
                   videoRef={videoRef}

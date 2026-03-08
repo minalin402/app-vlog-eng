@@ -65,7 +65,8 @@ export function SidebarCalendar() {
           {isLoading && <Spinner className="size-3 text-muted-foreground" />}
         </CardTitle>
       </CardHeader>
-      <CardContent className="flex justify-center px-2 pb-3">
+      <CardContent className="px-1 md:px-2 pb-3 w-full">
+        <div className="w-full overflow-hidden [&_.rdp]:w-full [&_table]:w-full [&_th]:w-[14.28%] [&_td]:w-[14.28%] [&_td]:p-0 [&_th]:p-0"></div>
         <Calendar
           mode="single"
           month={currentMonth}
@@ -81,7 +82,7 @@ export function SidebarCalendar() {
                 <button
                   {...props}
                   className={cn(
-                    "flex aspect-square size-auto w-full items-center justify-center text-sm font-normal transition-colors",
+                    "mx-auto flex aspect-square w-[85%] max-w-[32px] items-center justify-center text-sm font-normal transition-colors",
                     learned && "bg-green-100 text-green-600 rounded-full font-bold hover:bg-green-200",
                     isToday && !learned && "bg-blue-500 text-white rounded-full font-bold",
                     !learned && !isToday && "hover:bg-accent rounded-md",

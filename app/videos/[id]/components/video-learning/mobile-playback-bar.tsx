@@ -219,7 +219,7 @@ export function MobilePlaybackBar({
               <div className="mt-3 pt-3 border-t border-border/40 flex flex-col gap-4">
                 {/* Loop count slider */}
                 <div className="flex items-center gap-3">
-                  <span className="text-sm text-foreground shrink-0">单句循环次数</span>
+                  <span className="text-sm text-foreground shrink-0">单句播放次数</span>
                   <div className="flex-1 mx-1">
                     <input
                       type="range"

@@ -52,7 +52,10 @@ export function VideoCard({ video }: { video: Video }) {
       {/* 收藏按钮 */}
       <button onClick={handleToggleFavorite} className={cn(
         "absolute top-3 right-3 z-20 flex size-8 items-center justify-center rounded-full shadow-sm transition-all backdrop-blur-md",
-        isFavorite ? "bg-white/90 opacity-100" : "bg-black/20 opacity-0 group-hover:opacity-100"
+        isFavorite 
+          ? "bg-white/90 opacity-100" 
+          // ✨ 核心修改：默认 opacity-100 (手机端可见)；md:opacity-0 (电脑端隐藏)；md:group-hover:opacity-100 (电脑端悬停显示)
+          : "bg-black/20 opacity-100 md:opacity-0 md:group-hover:opacity-100" 
       )}>
         <Heart className={cn("size-4", isFavorite ? "fill-red-500 text-red-500" : "text-white")} />
       </button>

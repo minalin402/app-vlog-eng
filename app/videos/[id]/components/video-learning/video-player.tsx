@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useEffect } from "react"
+import { useRef, useEffect, useState } from "react" // ✨ 这里补上了 useState
 import { Play, Pause, Volume2, VolumeX, Maximize } from "lucide-react"
 
 interface VideoPlayerProps {
@@ -39,6 +39,41 @@ export function VideoPlayer({
   const internalRef = useRef<HTMLVideoElement>(null)
   const videoRef = (externalRef ?? internalRef) as React.RefObject<HTMLVideoElement>
 
+// ✨================ 状态和逻辑代码 ================✨
+  const [showControls, setShowControls] = useState(true)
+  const [showSpeedMenu, setShowSpeedMenu] = useState(false) // ✨ 1. 新增倍速菜单开关状态
+  const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  // 手机端点击屏幕唤起/隐藏控制栏
+  const handleScreenClick = () => {
+    // ✨ 2. 核心体验：如果倍速菜单正开着，点一下屏幕应该只关菜单，而不隐藏进度条
+    if (showSpeedMenu) {
+      setShowSpeedMenu(false)
+      return
+    }
+    setShowControls(prev => !prev)
+  }
+
+  // 每次显示控制栏时，如果是播放状态，3秒后自动隐藏
+  useEffect(() => {
+    // ✨ 3. 核心体验：如果用户正开着倍速菜单在犹豫，暂停自动隐藏倒计时
+    if (showControls && isPlaying && !showSpeedMenu) { 
+      if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current)
+      controlsTimeoutRef.current = setTimeout(() => {
+        setShowControls(false)
+      }, 3000)
+    }
+    return () => {
+      if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current)
+    }
+  }, [showControls, isPlaying, showSpeedMenu]) // 补上 showSpeedMenu 依赖
+
+  // 暂停时强制显示控制栏
+  useEffect(() => {
+    if (!isPlaying) setShowControls(true)
+  }, [isPlaying])
+  // ✨================ 结束 ================✨
+
   // Direct DOM refs for progress bar — no React state, no re-renders
   const progressBarRef  = useRef<HTMLDivElement>(null)
   const progressThumbRef = useRef<HTMLDivElement>(null)
@@ -50,8 +85,6 @@ export function VideoPlayer({
     return `${m}:${s.toString().padStart(2, "0")}`
   }
 
-  // Drive the progress bar by directly mutating DOM on timeupdate.
-  // This is the key: zero React re-renders for progress updates.
   useEffect(() => {
     const video = videoRef.current
     if (!video) return
@@ -74,8 +107,8 @@ export function VideoPlayer({
 
     video.addEventListener("timeupdate", handleUpdate, { passive: true })
     return () => video.removeEventListener("timeupdate", handleUpdate)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []) // stable: onTimeUpdate is a stable useCallback from parent
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) 
 
   if (mini) {
     return (
@@ -108,10 +141,17 @@ export function VideoPlayer({
   return (
     <div className="relative w-full group/video rounded-lg overflow-hidden">
       <div className="relative aspect-video bg-[#1a1a2e] overflow-hidden">
+        
+        {/* ✨ 捕捉屏幕点击的蒙版 */}
+        <div 
+          className="absolute inset-0 z-10" 
+          onClick={handleScreenClick}
+        />
+
         <video
           ref={videoRef}
           src={videoUrl}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover relative z-0"
           playsInline
           preload="auto"
           onLoadedMetadata={(e) => onDurationChange?.((e.target as HTMLVideoElement).duration)}
@@ -122,8 +162,8 @@ export function VideoPlayer({
         {/* Play overlay when paused */}
         {!isPlaying && (
           <button
-            onClick={onPlayPause}
-            className="absolute inset-0 flex items-center justify-center bg-black/20"
+            onClick={(e) => { e.stopPropagation(); onPlayPause(); }}
+            className="absolute inset-0 flex items-center justify-center bg-black/20 z-20"
             aria-label="播放"
           >
             <div className="size-16 rounded-full bg-black/50 flex items-center justify-center">
@@ -132,27 +172,27 @@ export function VideoPlayer({
           </button>
         )}
 
-        {isPlaying && (
-          <button onClick={onPlayPause} className="absolute inset-0" aria-label="暂停" />
-        )}
-
         {/* Controls overlay */}
-        <div className="absolute bottom-0 left-0 right-0 opacity-0 group-hover/video:opacity-100 transition-opacity duration-300 pointer-events-none group-hover/video:pointer-events-auto">
+        <div 
+          className={`absolute bottom-0 left-0 right-0 z-30 transition-opacity duration-300 ${
+            showControls 
+              ? "opacity-100 pointer-events-auto" 
+              : "opacity-0 pointer-events-none md:group-hover/video:opacity-100 md:group-hover/video:pointer-events-auto"
+          }`}
+          onClick={(e) => e.stopPropagation()} 
+        >
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
           <div className="relative px-3 pb-2.5 pt-8">
-
-            {/* Progress bar — DOM-driven, zero React re-renders */}
-
+            
+            {/* Progress bar */}
             <div
               className="relative h-1 bg-white/30 rounded-full cursor-pointer mb-2.5 group/bar"
               onClick={(e) => {
                 const rect = e.currentTarget.getBoundingClientRect()
                 const newTime = (e.clientX - rect.left) / rect.width * duration
                 
-                // 1. 通知视频去跳转
                 onSeek(newTime)
                 
-                // 2. 核心修复：不准等浏览器的 250ms 延迟，强行瞬间把进度条 UI 挪过去！
                 const pct = duration > 0 ? (newTime / duration) * 100 : 0
                 if (progressBarRef.current) progressBarRef.current.style.width = `${pct}%`
                 if (progressThumbRef.current) progressThumbRef.current.style.left = `calc(${pct}% - 6px)`
@@ -178,7 +218,7 @@ export function VideoPlayer({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <button
-                  onClick={onPlayPause}
+                  onClick={(e) => { e.stopPropagation(); onPlayPause(); }}
                   className="p-0.5 text-white hover:text-white/80 transition-colors"
                   aria-label={isPlaying ? "暂停" : "播放"}
                 >
@@ -188,7 +228,7 @@ export function VideoPlayer({
                   }
                 </button>
                 <button
-                  onClick={onToggleMute}
+                  onClick={(e) => { e.stopPropagation(); onToggleMute?.(); }}
                   className="p-0.5 text-white hover:text-white/80 transition-colors"
                   aria-label={muted ? "取消静音" : "静音"}
                 >
@@ -203,40 +243,48 @@ export function VideoPlayer({
               </div>
               <div className="flex items-center gap-2">
 
-                {/* === 核心修复：倍速悬浮菜单 === */}
-                <div className="relative group/speed flex items-center">
-                  <button className="text-xs text-white/80 font-medium hover:text-white transition-colors px-1 py-1">
+                {/* 倍速点击菜单 */}
+                <div className="relative flex items-center">
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setShowSpeedMenu(prev => !prev) // ✨ 1. 点击切换菜单的显示与隐藏
+                    }}
+                    className="text-xs text-white/80 font-medium hover:text-white transition-colors px-1 py-1"
+                  >
                     {playbackSpeed}x
                   </button>
                   
-                  {/* 外层增加 pb-2 (padding-bottom) 作为鼠标悬停的隐形桥梁，里层做黑色背景 */}
-                  <div className="absolute bottom-full right-0 pb-2 hidden group-hover/speed:block z-50">
-                    <div className="flex flex-col bg-black/90 backdrop-blur-sm rounded-lg py-1 shadow-lg pointer-events-auto min-w-[60px]">
-                      {[2, 1.5, 1.25, 1, 0.75, 0.5].map((s) => (
-                        <button
-                          key={s}
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            onSpeedChange?.(s)
-                          }}
-                          className={`px-3 py-1.5 text-xs text-center transition-colors ${
-                            playbackSpeed === s 
-                              ? "text-[#3b82f6] font-bold bg-white/10" 
-                              : "text-white/80 hover:bg-white/20 hover:text-white"
-                          }`}
-                        >
-                          {s}x
-                        </button>
-                      ))}
+                  {/* ✨ 2. 取消 group-hover，完全通过 showSpeedMenu 状态控制弹窗 */}
+                  {showSpeedMenu && (
+                    <div className="absolute bottom-full right-0 pb-2 z-50">
+                      <div className="flex flex-col bg-black/90 backdrop-blur-sm rounded-lg py-1 shadow-lg pointer-events-auto min-w-[60px]">
+                        {[2, 1.5, 1.25, 1, 0.75, 0.5].map((s) => (
+                          <button
+                            key={s}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              onSpeedChange?.(s)       // ✨ 3. 触发全局倍速改变（底部自动联动！）
+                              setShowSpeedMenu(false)  // ✨ 4. 点完倍速后，乖乖自动收起菜单
+                            }}
+                            className={`px-3 py-1.5 text-xs text-center transition-colors ${
+                              playbackSpeed === s 
+                                ? "text-[#3b82f6] font-bold bg-white/10" 
+                                : "text-white/80 hover:bg-white/20 hover:text-white"
+                            }`}
+                          >
+                            {s}x
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>                
-                {/* ================================= */}
 
                 <button
                   className="p-1 text-white hover:text-white/80 transition-colors"
                   aria-label="全屏"
-                  onClick={() => videoRef.current?.requestFullscreen?.()}
+                  onClick={(e) => { e.stopPropagation(); videoRef.current?.requestFullscreen?.(); }}
                 >
                   <Maximize className="size-4" />
                 </button>
