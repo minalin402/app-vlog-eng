@@ -491,11 +491,17 @@ const rafCallback = useCallback(() => {
   }, [isPlaying, startRaf, stopRaf])
 
   // ── Video ended ──────────────────────────────────────────────────────
+// ── Video ended ──────────────────────────────────────────────────────
   const handleEnded = useCallback(() => {
-    stopRaf()
     if (playbackModeRef.current === "singleLoop") {
-      // 清除单句循环状态
+      // ✨ 核心修复 1：单集循环时，千万不要调用 stopRaf() 杀掉引擎！
+      // 而是要强制清空所有的“高亮记忆”和“循环锁”，让它宛如新生
       shadowingEndTimeRef.current = null
+      lastHighlightedIdRef.current = null
+      currentLoopCountRef.current = 0
+      isSeekingRef.current = false
+      if (seekTimeoutRef.current) clearTimeout(seekTimeoutRef.current)
+
       const video = videoRef.current
       if (video) {
         video.currentTime = 0
@@ -503,12 +509,15 @@ const rafCallback = useCallback(() => {
           setIsPlaying(false)
         }).then(() => {
           setIsPlaying(true)
+          startRaf() // ✨ 核心修复 2：强行补一枪，确保雷达引擎绝对在运转
         })
       }
     } else {
+      // 正常播放结束，彻底停掉雷达
+      stopRaf()
       setIsPlaying(false)
     }
-  }, [stopRaf])
+  }, [stopRaf, startRaf]) // ✨ 记得把 startRaf 加进依赖数组
 
   // ──��──────────────────────────────────────────────────────────────────
   // 点读跳转 — seek + autoplay, reset rAF
