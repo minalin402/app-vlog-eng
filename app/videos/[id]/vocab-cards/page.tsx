@@ -124,7 +124,7 @@ export default function VocabCardsPage() {
           <button
             onClick={() => setHideChinese(!hideChinese)}
             // ✨ 变小：文字改为 text-xs，内边距改为 px-2.5 py-1，间距改为 gap-1
-            className={`flex items-center gap-1 px-2.5 py-1 rounded-lg border transition-colors text-xs font-medium ${
+            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg border transition-colors text-xs font-medium ${
               hideChinese ? "border-[#3b82f6] text-[#3b82f6] bg-blue-50/50" : "border-border text-muted-foreground hover:bg-accent"
             }`}
           >
@@ -136,7 +136,7 @@ export default function VocabCardsPage() {
           <button
             onClick={() => setOnlyFav(!onlyFav)}
             // ✨ 变小：文字改为 text-xs，内边距改为 px-2.5 py-1，间距改为 gap-1
-            className={`flex items-center gap-1 px-2.5 py-1 rounded-lg border transition-colors text-xs font-medium ${
+            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg border transition-colors text-xs font-medium ${
               onlyFav ? "border-amber-500 text-amber-600 bg-amber-50/50" : "border-border text-muted-foreground hover:bg-accent"
             }`}
           >

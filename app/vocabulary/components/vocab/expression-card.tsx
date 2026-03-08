@@ -16,11 +16,11 @@ const playTTS = (text: string, e?: React.MouseEvent) => {
 
 export function ExpressionCard({ item, hideChinese, isFavorited, onToggleFav }: { item: any; hideChinese: boolean; isFavorited: boolean; onToggleFav: () => void }) {
   return (
-    <div className="bg-card border border-border rounded-2xl p-6 shadow-sm flex flex-col h-full hover:shadow-md transition-shadow relative overflow-hidden">
-      {/* 顶部橙色装饰条 */}
+    // 将这行代码里的 p-6 替换为 p-4 md:p-6
+    <div className="bg-card border border-border rounded-2xl p-4 md:p-6 shadow-sm flex flex-col h-full hover:shadow-md transition-shadow relative overflow-hidden">      {/* 顶部橙色装饰条 */}
       <div className="absolute top-0 left-0 right-0 h-1 bg-[#f97316]" />
 
-      <div className="flex items-start justify-between mb-5">
+      <div className="flex items-start justify-between mb-1">
         <div className="flex items-start gap-2">
           <h4 className="text-lg font-bold text-foreground leading-snug">{item.expression}</h4>
           {/* ✨ 新增：金句也加上发音按钮 */}
@@ -37,11 +37,12 @@ export function ExpressionCard({ item, hideChinese, isFavorited, onToggleFav }: 
         </button>
       </div>
 
-      <div className="mt-auto flex-1 space-y-4">
+      {/* ===== 从这里开始覆盖，直到最后 ===== */}
+      <div className="flex flex-col gap-3 flex-1 mt-1">
         <div>
-          <p className="text-xs text-orange-800/70 mb-2 font-medium">地道表达解析</p>
+          <p className="text-xs text-orange-800/70 mb-1.5 font-medium">地道表达解析</p>
           <div
-            className={`bg-orange-50/80 text-orange-900 px-4 py-4 rounded-xl text-sm border border-orange-100 [&>p]:mb-3 last:[&>p]:mb-0 [&>b]:text-orange-950 leading-relaxed transition-all duration-300 ${hideChinese ? "blur-sm select-none opacity-50" : ""}`}
+            className={`bg-orange-50/80 text-orange-900 px-4 py-3.5 rounded-xl text-sm border border-orange-100 [&>p]:mb-2 last:[&>p]:mb-0 [&>b]:text-orange-950 leading-relaxed transition-all duration-300 ${hideChinese ? "blur-sm select-none opacity-50" : ""}`}
             dangerouslySetInnerHTML={{ __html: item.expression_explanation || item.analysis || '' }}
           />
         </div>
@@ -49,7 +50,7 @@ export function ExpressionCard({ item, hideChinese, isFavorited, onToggleFav }: 
         {item.example && (
           <div className="border-l-4 border-orange-500 bg-orange-50 dark:bg-orange-950/30 rounded-r-lg px-3 py-2.5">
             <p className="text-sm text-foreground italic leading-relaxed">{item.example.en}</p>
-            <p className={`text-sm text-muted-foreground mt-1 leading-relaxed transition-all duration-300 ${hideChinese ? "blur-sm select-none opacity-50" : ""}`}>
+            <p className={`text-xs text-muted-foreground mt-1.5 leading-relaxed transition-all duration-300 ${hideChinese ? "blur-sm select-none opacity-50" : ""}`}>
               {item.example.zh}
             </p>
           </div>

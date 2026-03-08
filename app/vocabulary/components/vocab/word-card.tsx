@@ -18,7 +18,7 @@ export function WordCard({ item, hideChinese, isFavorited, onToggleFav }: { item
   const wordText = item.word || item.title
 
   return (
-    <div className="bg-card border border-border rounded-2xl p-6 shadow-sm flex flex-col h-full hover:shadow-md transition-shadow relative overflow-hidden">
+    <div className="bg-card border border-border rounded-2xl p-4 md:p-6 shadow-sm flex flex-col h-full hover:shadow-md transition-shadow relative overflow-hidden">
       {/* 顶部绿色装饰条 */}
       <div className="absolute top-0 left-0 right-0 h-1 bg-[#22c55e]" />
       
@@ -29,11 +29,10 @@ export function WordCard({ item, hideChinese, isFavorited, onToggleFav }: { item
         </button>
       </div>
 
-      <div className="flex items-center gap-3 mb-5">
+      <div className="flex items-center gap-3 mb-2">
         <div className="flex items-center gap-2">
-          {/* ✨ 新增：醒目的词性展示 */}
           {item.pos && (
-            <span className="text-xs font-semibold text-grey-100  px-.5 py-0 rounded italic">
+            <span className="text-xs font-semibold text-gray-500 px-0.5 py-0 rounded italic">
               {item.pos}
             </span>
           )}
@@ -41,7 +40,6 @@ export function WordCard({ item, hideChinese, isFavorited, onToggleFav }: { item
             <span className="text-sm text-muted-foreground font-mono">{item.phonetic}</span>
           )}
         </div>
-        {/* ✨ 新增：绑定发音事件 */}
         <button 
           onClick={(e) => playTTS(wordText, e)} 
           className="p-1.5 rounded-full bg-blue-50 hover:bg-blue-100 transition-colors group"
@@ -51,7 +49,7 @@ export function WordCard({ item, hideChinese, isFavorited, onToggleFav }: { item
         </button>
       </div>
 
-      <div className="space-y-4 mt-auto flex-1">
+      <div className="flex flex-col gap-3 flex-1 mt-1">
         <div>
           <p className="text-xs text-muted-foreground mb-1 font-medium">中文释义</p>
           <p className={`text-base text-foreground leading-relaxed font-medium transition-all duration-300 ${hideChinese ? "blur-sm select-none opacity-50" : ""}`}>
@@ -69,7 +67,7 @@ export function WordCard({ item, hideChinese, isFavorited, onToggleFav }: { item
         )}
 
         {item.examples && item.examples.length > 0 && (
-          <div className="flex flex-col gap-2 mt-2">
+          <div className="flex flex-col gap-2">
             {item.examples.map((ex: any, i: number) => (
               <div key={i} className="border-l-4 border-green-500 bg-green-50 dark:bg-green-950/30 rounded-r-lg px-3 py-2">
                 <p className="text-sm text-foreground italic">{ex.en}</p>

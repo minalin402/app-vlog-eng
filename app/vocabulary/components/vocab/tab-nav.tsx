@@ -18,12 +18,14 @@ export function TabNav({ activeTab, onTabChange, wordCount, phraseCount, express
   ]
 
   return (
-    <div className="flex rounded-lg border border-border overflow-hidden">
+    // ✨ 核心适配 4：加上 overflow-x-auto hide-scrollbar，允许手指横向滑动
+    <div className="flex rounded-lg border border-border overflow-x-auto hide-scrollbar">
       {tabs.map((tab) => (
         <button
           key={tab.key}
           onClick={() => onTabChange(tab.key)}
-          className={`flex-1 py-2.5 px-4 text-sm font-medium transition-colors ${
+          // ✨ 加入 min-w-[90px] 和 whitespace-nowrap 保证文字绝对不会被挤换行
+          className={`flex-1 min-w-[90px] whitespace-nowrap py-2.5 px-4 text-sm font-medium transition-colors ${
             activeTab === tab.key
               ? "bg-blue-500 text-white"
               : "bg-card text-foreground hover:bg-accent"
