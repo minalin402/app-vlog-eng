@@ -65,36 +65,38 @@ export function SidebarCalendar() {
           {isLoading && <Spinner className="size-3 text-muted-foreground" />}
         </CardTitle>
       </CardHeader>
-      <CardContent className="px-1 md:px-2 pb-3 w-full">
-        <div className="w-full overflow-hidden [&_.rdp]:w-full [&_table]:w-full [&_th]:w-[14.28%] [&_td]:w-[14.28%] [&_td]:p-0 [&_th]:p-0"></div>
-        <Calendar
-          mode="single"
-          month={currentMonth}
-          onMonthChange={setCurrentMonth}
-          className="w-full"
-          components={{
-            DayButton: ({ day, modifiers, ...props }) => {
-              const learned = learnedDates.some((d) => isSameDay(d, day.date))
-              const isToday = isSameDay(day.date, new Date())
-              const outside = modifiers.outside
+<CardContent className="px-1 md:px-2 pb-3 w-full">
+        {/* ✨ 注意这里：div 不要提前闭合，要把整个 Calendar 包起来！ */}
+        <div className="w-full overflow-hidden [&_.rdp]:w-full [&_table]:w-full [&_th]:w-[14.28%] [&_td]:w-[14.28%] [&_td]:p-0 [&_th]:p-0">
+          <Calendar
+            mode="single"
+            month={currentMonth}
+            onMonthChange={setCurrentMonth}
+            className="w-full"
+            components={{
+              DayButton: ({ day, modifiers, ...props }) => {
+                const learned = learnedDates.some((d) => isSameDay(d, day.date))
+                const isToday = isSameDay(day.date, new Date())
+                const outside = modifiers.outside
 
-              return (
-                <button
-                  {...props}
-                  className={cn(
-                    "mx-auto flex aspect-square w-[85%] max-w-[32px] items-center justify-center text-sm font-normal transition-colors",
-                    learned && "bg-green-100 text-green-600 rounded-full font-bold hover:bg-green-200",
-                    isToday && !learned && "bg-blue-500 text-white rounded-full font-bold",
-                    !learned && !isToday && "hover:bg-accent rounded-md",
-                    outside && "text-muted-foreground opacity-50"
-                  )}
-                >
-                  {day.date.getDate()}
-                </button>
-              )
-            },
-          }}
-        />
+                return (
+                  <button
+                    {...props}
+                    className={cn(
+                      "mx-auto flex aspect-square w-[85%] max-w-[32px] items-center justify-center text-sm font-normal transition-colors",
+                      learned && "bg-green-100 text-green-600 rounded-full font-bold hover:bg-green-200",
+                      isToday && !learned && "bg-blue-500 text-white rounded-full font-bold",
+                      !learned && !isToday && "hover:bg-accent rounded-md",
+                      outside && "text-muted-foreground opacity-50"
+                    )}
+                  >
+                    {day.date.getDate()}
+                  </button>
+                )
+              },
+            }}
+          />
+        </div> {/* ✨ div 的闭合标签在这里！ */}
       </CardContent>
     </Card>
   )

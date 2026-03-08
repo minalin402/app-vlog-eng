@@ -228,6 +228,7 @@ export default function VideoLearningPage() {
   // ── Video element ref ─────────────────────────────────────────────────
   const videoRef = useRef<HTMLVideoElement>(null)
   const seekTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const subtitleScrollRef = useRef<HTMLDivElement>(null) // ✨ 新增：独立的字幕滚动容器锁
 
   // ── Player UI state (only things that drive layout / controls) ────────
   const [isPlaying, setIsPlaying] = useState(false)
@@ -248,6 +249,72 @@ export default function VideoLearningPage() {
   const [practiceMode, setPracticeMode] = useState<"none" | "shadowing" | "fill">("none")
   const [fontSize, setFontSize] = useState<"small" | "medium" | "large">("medium")
   const [mobileVideoMode, setMobileVideoMode] = useState<"full" | "mini" | "hidden">("full")
+ 
+
+// ✨ 1. 拖拽引擎重构（解决卡顿与图标跟随问题）
+  const [miniPos, setMiniPos] = useState({ x: 0, y: 0 })
+  const [isDragging, setIsDragging] = useState(false)
+  const isDraggingRef = useRef(false)
+  const posRef = useRef({ x: 0, y: 0 }) // 核心：用 Ref 存储实时位置，绕过 React 渲染
+  const dragStartRef = useRef({ x: 0, y: 0, initX: 0, initY: 0 })
+  const dragContainerRef = useRef<HTMLDivElement>(null) // 核心：直接操作 DOM 节点
+
+  const handleTouchStart = useCallback((e: React.TouchEvent | React.MouseEvent) => {
+    if (mobileVideoMode === "full") return // 只要不是全屏，小窗和图标都可以被拖拽
+    const clientX = 'touches' in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX
+    const clientY = 'touches' in e ? e.touches[0].clientY : (e as React.MouseEvent).clientY
+    isDraggingRef.current = true
+    setIsDragging(true)
+    dragStartRef.current = { x: clientX, y: clientY, initX: posRef.current.x, initY: posRef.current.y }
+  }, [mobileVideoMode])
+
+  const handleTouchMove = useCallback((e: React.TouchEvent | React.MouseEvent) => {
+    if (!isDraggingRef.current || mobileVideoMode === "full") return
+    const clientX = 'touches' in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX
+    const clientY = 'touches' in e ? e.touches[0].clientY : (e as React.MouseEvent).clientY
+    const dx = clientX - dragStartRef.current.x
+    const dy = clientY - dragStartRef.current.y
+
+    const screenWidth = typeof window !== "undefined" ? window.innerWidth : 400
+    const screenHeight = typeof window !== "undefined" ? window.innerHeight : 800
+    const maxLeft = -(screenWidth - 200)
+    const maxRight = 16
+    const maxTop = -16
+    const maxBottom = screenHeight - 200
+
+    const newX = Math.max(maxLeft, Math.min(dragStartRef.current.initX + dx, maxRight))
+    const newY = Math.max(maxTop, Math.min(dragStartRef.current.initY + dy, maxBottom))
+
+    posRef.current = { x: newX, y: newY } // 更新内存位置
+
+    // ✨ 绝对核心：直接通过原生 JS 修改 DOM，避免触发 React 渲染，实现 60fps 丝滑拖拽
+    if (dragContainerRef.current) {
+      dragContainerRef.current.style.transform = `translate3d(${newX}px, ${newY}px, 0)`
+    }
+  }, [mobileVideoMode])
+
+  const handleTouchEnd = useCallback(() => {
+    if (isDraggingRef.current) {
+      isDraggingRef.current = false
+      setIsDragging(false)
+      setMiniPos(posRef.current) // 拖拽结束才同步给 React，保存记忆
+    }
+  }, [])
+
+  const handleCaptureClick = useCallback((e: React.MouseEvent) => {
+    if (mobileVideoMode !== "full") {
+      const dx = Math.abs(posRef.current.x - dragStartRef.current.initX)
+      const dy = Math.abs(posRef.current.y - dragStartRef.current.initY)
+      if (dx > 5 || dy > 5) {
+        e.stopPropagation()
+        e.preventDefault()
+      }
+    }
+  }, [mobileVideoMode])
+  // ✨ 拖拽逻辑结束
+
+
+
   // === 新增：物理隔离桌面端与移动端 ===
   const [isMobile, setIsMobile] = useState(false)
   useEffect(() => {
@@ -404,9 +471,14 @@ const rafCallback = useCallback(() => {
           }
         })
 
-        // ✨ 核心修改：把 block 属性改为 "start"，让高亮句永远对齐容器顶部
-        if (activeEl) {
-          (activeEl as HTMLElement).scrollIntoView({ behavior: "smooth", block: "start" })
+      // ✨ 恢复“永远在第一行”的功能，同时保持不顶起整个网页的优势
+        if (activeEl && subtitleScrollRef.current) {
+          subtitleScrollRef.current.scrollTo({
+            // ✨ 核心恢复：将 offsetTop - 24 改为 offsetTop - 12 
+            // (减去的 12px 正好抵消容器自带的 p-3 内边距，让高亮句完美、精准地顶格在第一行！)
+            top: (activeEl as HTMLElement).offsetTop - 12, 
+            behavior: "smooth"
+          })
         }
 
         // Reset loop counter when switching to a new sentence
@@ -722,7 +794,7 @@ const rafCallback = useCallback(() => {
                 onReset={() => setShowResetDialog(true)}
                 showResetButton={showResetButton}
               />
-              <div className="flex-1 overflow-y-auto">
+              <div ref={subtitleScrollRef} className="flex-1 p-3 overflow-y-auto hide-scrollbar touch-pan-y relative">
                 <SubtitleList
                   subtitles={subtitles}
                   subtitleMode={subtitleMode}
@@ -766,34 +838,38 @@ const rafCallback = useCallback(() => {
 
       {/* ===== MOBILE (仅在手机端渲染) ===== */}
       {isMobile && (
-        <div className="flex-1 flex flex-col pb-20 overflow-hidden">
+        <div className="flex-1 flex flex-col pb-20 overflow-hidden relative">
           
-          {/* 1. 全屏视频模式：增加边距和圆角卡片效果 */}
-          {mobileVideoMode === "full" && (
-            <div className="sticky top-0 z-30 bg-background shrink-0 px-3 pt-0 -mt-2 pb-1">
-              <div className="rounded-xl overflow-hidden shadow-sm border border-border/40">
-                <VideoPlayer
-                  videoRef={videoRef}
-                  videoUrl={videoData?.videoUrl}
-                  isPlaying={isPlaying}
-                  duration={duration}
-                  playbackSpeed={playbackSpeed}
-                  muted={muted}
-                  onPlayPause={handlePlayPause}
-                  onSeek={handleSeek}
-                  onDurationChange={setDuration}
-                  onToggleMute={() => setMuted((m) => !m)}
-                  onEnded={handleEnded}
-                  onSeeked={handleSeeked}
-                  onSpeedChange={setPlaybackSpeed}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* 2. 真正的悬浮小窗模式 (fixed 定位脱离文档流) */}
-          {mobileVideoMode === "mini" && (
-            <div className="fixed top-4 right-4 z-50 w-48 rounded-xl overflow-hidden shadow-2xl border border-border/60">
+          {/* ✨ 核心修复：全屏/小窗/恢复按钮 大融合！ */}
+          <div
+            ref={dragContainerRef}
+            className={`z-40 ${isDragging ? "" : "transition-all duration-300"} ${
+              mobileVideoMode === "full" ? "sticky top-0 bg-background shrink-0 px-3 pt-0 -mt-2 pb-1 w-full" :
+              "fixed top-4 right-4 w-48" // 小窗和隐藏模式，共享同样的宽高和定位基础
+            }`}
+            style={
+              mobileVideoMode !== "full"
+                ? {
+                    transform: `translate3d(${miniPos.x}px, ${miniPos.y}px, 0)`,
+                    touchAction: "none"
+                  }
+                : { transform: "none", touchAction: "auto" }
+            }
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            onMouseDown={handleTouchStart}
+            onMouseMove={handleTouchMove}
+            onMouseUp={handleTouchEnd}
+            onMouseLeave={handleTouchEnd}
+            onClickCapture={handleCaptureClick}
+          >
+            {/* 视频主体 */}
+            <div className={`transition-all duration-300 origin-top-right ${
+              mobileVideoMode === "full" ? "rounded-xl overflow-hidden shadow-sm border border-border/40" :
+              mobileVideoMode === "mini" ? "rounded-xl overflow-hidden shadow-2xl border border-border/60 bg-black" :
+              "opacity-0 pointer-events-none scale-50" // 收起时，缩小并隐藏
+            }`}>
               <VideoPlayer
                 videoRef={videoRef}
                 videoUrl={videoData?.videoUrl}
@@ -807,32 +883,35 @@ const rafCallback = useCallback(() => {
                 onToggleMute={() => setMuted((m) => !m)}
                 onEnded={handleEnded}
                 onSeeked={handleSeeked}
-                mini
+                mini={mobileVideoMode === "mini"}
                 onSpeedChange={setPlaybackSpeed}
               />
+              {mobileVideoMode === "mini" && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); setMobileVideoMode("hidden") }}
+                  className="absolute top-1 right-1 z-50 size-6 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80"
+                >
+                  <X className="size-3.5" />
+                </button>
+              )}
+            </div>
+
+            {/* 恢复按钮：现在它和视频待在同一个盒子里，位置永远同步！ */}
+            <div className={`absolute top-0 right-0 transition-all duration-300 origin-top-right ${
+              mobileVideoMode === "hidden" ? "opacity-100 scale-100" : "opacity-0 pointer-events-none scale-50"
+            }`}>
               <button
-                onClick={() => setMobileVideoMode("hidden")}
-                className="absolute top-1 right-1 z-50 size-6 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80"
-                aria-label="收起视频"
+                onClick={(e) => { e.stopPropagation(); setMobileVideoMode("mini") }}
+                className="size-11 rounded-full bg-[#3b82f6]/90 text-white flex items-center justify-center shadow-lg active:scale-95 backdrop-blur-sm"
               >
-                <X className="size-3.5" />
+                <Clapperboard className="size-5" />
               </button>
             </div>
-          )}
-
-          {/* 3. 收起后的恢复按钮 (固定在右上角) */}
-          {mobileVideoMode === "hidden" && (
-            <button
-              onClick={() => setMobileVideoMode("mini")}
-              className="fixed top-6 right-4 z-50 size-11 rounded-full bg-[#3b82f6]/90 text-white flex items-center justify-center shadow-lg active:scale-95 transition-transform backdrop-blur-sm"
-              aria-label="打开视频"
-            >
-              <Clapperboard className="size-5" />
-            </button>
-          )}
+          </div>
 
           {/* 4. 可手动滑动且隐藏滚动条的字幕区 */}
-          <div className="flex-1 p-3 overflow-y-auto hide-scrollbar touch-pan-y">
+          {/* ✨ 核心修复：找回丢失的 ref 追踪器，以及用于精准计算位置的 relative */}
+          <div ref={subtitleScrollRef} className="flex-1 p-3 overflow-y-auto hide-scrollbar touch-pan-y relative">
             <SubtitleList
               subtitles={subtitles}
               subtitleMode={subtitleMode}

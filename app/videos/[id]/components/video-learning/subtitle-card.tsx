@@ -53,102 +53,100 @@ export const playTTS = (text: string, e?: React.MouseEvent) => {
   }
 }
 
-// ─── Word Popover Card ────────────────────────────────────────────────────────
+// ─── Word Modal Card ────────────────────────────────────────────────────────
 function WordPopoverCard({ vocab, isFavorited, onToggleFav, onClose }: { vocab: VocabItem, isFavorited: boolean, onToggleFav: () => void, onClose: () => void }) {
   return (
-    <div className="w-64 p-3">
-      <div className="flex items-start justify-between mb-2">
-        <h4 className="text-lg font-bold text-foreground">{vocab.word}</h4>
-        <button onClick={onClose} className="p-0.5 text-muted-foreground hover:text-foreground">
-          <X className="size-4" />
+    <div className="w-[85vw] max-w-sm p-5 sm:p-6">
+      <div className="flex items-start justify-between mb-4">
+        <h4 className="text-xl font-bold text-foreground pr-4">{vocab.word}</h4>
+        <button onClick={onClose} className="p-1.5 -mr-2 -mt-2 text-muted-foreground hover:bg-accent rounded-full transition-colors shrink-0">
+          <X className="size-5" />
         </button>
       </div>
-      <div className="flex items-center gap-2 mb-2">
+      <div className="flex items-center gap-3 mb-4">
         <span className="text-sm text-muted-foreground">{vocab.phonetic}</span>
-        {/* ✨ 加入发音事件 */}
-        <button onClick={(e) => playTTS(vocab.word, e)} className="p-0.5 rounded-full hover:bg-accent text-[#3b82f6]" aria-label="发音">
-          <Volume2 className="size-3.5" />
+        <button onClick={(e) => playTTS(vocab.word, e)} className="p-1.5 rounded-full bg-blue-50 hover:bg-blue-100 text-[#3b82f6] transition-colors" aria-label="发音">
+          <Volume2 className="size-4" />
         </button>
       </div>
-      {/* ✨ 加入词性 POS */}
-      <p className="text-sm text-foreground mb-2">
-        {vocab.pos && <span className="text-muted-foreground mr-1.5 font-mono italic">{vocab.pos}</span>}
+      <p className="text-base text-foreground mb-4 leading-relaxed">
+        {vocab.pos && <span className="text-muted-foreground mr-2 font-mono italic">{vocab.pos}</span>}
         {vocab.chinese_definition}
       </p>
-      {/* ✨ 去掉英文释义，改为近义词 */}
       {vocab.synonyms && (
-        <div className="bg-green-50 text-green-700 px-2 py-1.5 rounded text-xs mb-3 font-medium">
+        <div className="bg-green-50 text-green-700 px-3 py-2 rounded-lg text-sm mb-4 font-medium">
           近义: {vocab.synonyms}
         </div>
       )}
-      <div className="flex justify-end">
-        <button onClick={onToggleFav} className={`p-1 rounded transition-colors ${isFavorited ? "text-amber-500" : "text-muted-foreground hover:text-foreground"}`}>
+      <div className="flex justify-end pt-3 border-t border-border/50">
+        <button onClick={onToggleFav} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors ${isFavorited ? "bg-amber-50 text-amber-500" : "bg-accent/50 text-muted-foreground hover:text-foreground"}`}>
           <Bookmark className="size-4" fill={isFavorited ? "currentColor" : "none"} />
+          <span className="text-sm font-medium">{isFavorited ? "已收藏" : "收藏"}</span>
         </button>
       </div>
     </div>
   )
 }
 
-// ─── Phrase Popover Card ──────────────────────────────────────────────────────
+// ─── Phrase Modal Card ──────────────────────────────────────────────────────
 function PhrasePopoverCard({ phrase, isFavorited, onToggleFav, onClose }: { phrase: PhraseItem, isFavorited: boolean, onToggleFav: () => void, onClose: () => void }) {
   return (
-    <div className="w-64 p-3">
-      <div className="flex items-start justify-between mb-2">
-        <h4 className="text-lg font-bold text-foreground">{phrase.phrase}</h4>
-        <button onClick={onClose} className="p-0.5 text-muted-foreground hover:text-foreground">
-          <X className="size-4" />
+    <div className="w-[85vw] max-w-sm p-5 sm:p-6">
+      <div className="flex items-start justify-between mb-4">
+        <h4 className="text-xl font-bold text-foreground pr-4">{phrase.phrase}</h4>
+        <button onClick={onClose} className="p-1.5 -mr-2 -mt-2 text-muted-foreground hover:bg-accent rounded-full transition-colors shrink-0">
+          <X className="size-5" />
         </button>
       </div>
-      <div className="flex items-center gap-2 mb-2">
+      <div className="flex items-center gap-3 mb-4">
         {phrase.phonetic && <span className="text-sm text-muted-foreground">{phrase.phonetic}</span>}
-        {/* ✨ 加入发音事件 */}
-        <button onClick={(e) => playTTS(phrase.phrase, e)} className="p-0.5 rounded-full hover:bg-accent text-[#3b82f6]" aria-label="发音">
-          <Volume2 className="size-3.5" />
+        <button onClick={(e) => playTTS(phrase.phrase, e)} className="p-1.5 rounded-full bg-blue-50 hover:bg-blue-100 text-[#3b82f6] transition-colors" aria-label="发音">
+          <Volume2 className="size-4" />
         </button>
       </div>
-      <p className="text-sm text-foreground mb-2">{phrase.chinese_definition}</p>
+      <p className="text-base text-foreground mb-4 leading-relaxed">{phrase.chinese_definition}</p>
       {phrase.synonyms && (
-        <div className="bg-blue-50 text-blue-700 px-2 py-1.5 rounded text-xs mb-3 font-medium">
+        <div className="bg-blue-50 text-blue-700 px-3 py-2 rounded-lg text-sm mb-4 font-medium">
           近义: {phrase.synonyms}
         </div>
       )}
-      <div className="flex justify-end">
-        <button onClick={onToggleFav} className={`p-1 rounded transition-colors ${isFavorited ? "text-amber-500" : "text-muted-foreground hover:text-foreground"}`}>
+      <div className="flex justify-end pt-3 border-t border-border/50">
+        <button onClick={onToggleFav} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors ${isFavorited ? "bg-amber-50 text-amber-500" : "bg-accent/50 text-muted-foreground hover:text-foreground"}`}>
           <Bookmark className="size-4" fill={isFavorited ? "currentColor" : "none"} />
+          <span className="text-sm font-medium">{isFavorited ? "已收藏" : "收藏"}</span>
         </button>
       </div>
     </div>
   )
 }
 
-// ─── Expression Popover Card ──────────────────────────────────────────────────
+// ─── Expression Modal Card ──────────────────────────────────────────────────
 function ExpressionPopoverCard({ expression, isFavorited, onToggleFav, onClose }: { expression: ExpressionItem, isFavorited: boolean, onToggleFav: () => void, onClose: () => void }) {
   return (
-    <div className="w-72 p-3">
-      <div className="flex items-start justify-between mb-2">
-        <div className="flex items-center gap-2">
-           <h4 className="text-base font-bold text-foreground leading-snug">{expression.expression}</h4>
-           {/* ✨ 金句也加上发音喇叭 */}
-           <button onClick={(e) => playTTS(expression.expression, e)} className="p-0.5 rounded-full hover:bg-accent text-[#3b82f6]" aria-label="发音">
+    <div className="w-[85vw] max-w-sm p-5 sm:p-6">
+      <div className="flex items-start justify-between mb-4">
+        <div className="flex items-center gap-3 pr-4">
+           <h4 className="text-lg font-bold text-foreground leading-snug">{expression.expression}</h4>
+           <button onClick={(e) => playTTS(expression.expression, e)} className="p-1.5 rounded-full bg-blue-50 hover:bg-blue-100 text-[#3b82f6] shrink-0 transition-colors" aria-label="发音">
              <Volume2 className="size-4" />
            </button>
         </div>
-        <button onClick={onClose} className="p-0.5 text-muted-foreground hover:text-foreground shrink-0 ml-2">
-          <X className="size-4" />
+        <button onClick={onClose} className="p-1.5 -mr-2 -mt-2 text-muted-foreground hover:bg-accent rounded-full transition-colors shrink-0">
+          <X className="size-5" />
         </button>
       </div>
-      <div className="bg-orange-50 text-orange-900 px-2 py-2 rounded text-xs mb-3 [&>p]:mb-2 [&>b]:text-orange-950 leading-relaxed" dangerouslySetInnerHTML={{ __html: expression.expression_explanation }} />
-      <div className="flex justify-end">
-        <button onClick={onToggleFav} className={`p-1 rounded transition-colors ${isFavorited ? "text-amber-500" : "text-muted-foreground hover:text-foreground"}`}>
+      <div className="bg-orange-50 text-orange-900 px-4 py-3 rounded-xl text-sm mb-4 [&>p]:mb-2 [&>b]:text-orange-950 leading-relaxed" dangerouslySetInnerHTML={{ __html: expression.expression_explanation }} />
+      <div className="flex justify-end pt-3 border-t border-border/50">
+        <button onClick={onToggleFav} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors ${isFavorited ? "bg-amber-50 text-amber-500" : "bg-accent/50 text-muted-foreground hover:text-foreground"}`}>
           <Bookmark className="size-4" fill={isFavorited ? "currentColor" : "none"} />
+          <span className="text-sm font-medium">{isFavorited ? "已收藏" : "收藏"}</span>
         </button>
       </div>
     </div>
   )
 }
 
-// ─── Tokenized English with underline highlights and Popover ──────────────────
+// ─── Tokenized English with underline highlights and Centered Modal ──────────────────
 function RenderTokenizedEnglish({
   tokens, practiceMode, revealedTokens, onToggleToken, vocabularies = [], phrases = [], expressions = [],
   favState, onToggleFav
@@ -165,7 +163,7 @@ function RenderTokenizedEnglish({
       {tokens.map((token, idx) => {
         if (!token.isHighlight || !token.type || !token.refId) return <span key={idx}>{token.text}</span>
         
-        const refId = String(token.refId) // 确保类型安全
+        const refId = String(token.refId) 
         const tokenType = token.type
 
         if (isCloze) {
@@ -182,18 +180,32 @@ function RenderTokenizedEnglish({
         const expr = tokenType === "e" ? expressions.find((e) => String(e.id) === refId) : null
 
         return (
-          <Popover key={idx} open={openPopoverId === `${refId}-${idx}`} onOpenChange={(open) => setOpenPopoverId(open ? `${refId}-${idx}` : null)}>
-            <PopoverTrigger asChild>
-              <button onClick={(e) => e.stopPropagation()} className={`inline underline decoration-2 ${TOKEN_UNDERLINE[tokenType]} underline-offset-4 cursor-pointer hover:bg-accent/50 rounded-sm px-0.5 transition-colors`}>
-                {token.text}
-              </button>
-            </PopoverTrigger>
-            <PopoverContent className="p-0 w-auto" side="top" align="center">
-              {vocab && <WordPopoverCard vocab={vocab} isFavorited={!!favState[vocab.id]} onToggleFav={() => onToggleFav(String(vocab.id), "word")} onClose={() => setOpenPopoverId(null)} />}
-              {phrase && <PhrasePopoverCard phrase={phrase} isFavorited={!!favState[phrase.id]} onToggleFav={() => onToggleFav(String(phrase.id), "phrase")} onClose={() => setOpenPopoverId(null)} />}
-              {expr && <ExpressionPopoverCard expression={expr} isFavorited={!!favState[expr.id]} onToggleFav={() => onToggleFav(String(expr.id), "expression")} onClose={() => setOpenPopoverId(null)} />}
-            </PopoverContent>
-          </Popover>
+          <span key={idx}>
+            <button 
+              onClick={(e) => { e.stopPropagation(); setOpenPopoverId(`${refId}-${idx}`) }} 
+              className={`inline underline decoration-2 ${TOKEN_UNDERLINE[tokenType]} underline-offset-4 cursor-pointer hover:bg-accent/50 rounded-sm px-0.5 transition-colors`}
+            >
+              {token.text}
+            </button>
+            
+            {/* ✨ 核心修复 1：抛弃出画的 Popover，改用固定在屏幕正中央的 Modal。
+                不仅不会遮挡正在滚动的字幕，还不干扰底层视频播放！ */}
+            {openPopoverId === `${refId}-${idx}` && (
+              <div 
+                className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4 animate-in fade-in duration-200"
+                onClick={(e) => { e.stopPropagation(); setOpenPopoverId(null) }}
+              >
+                <div 
+                  className="bg-card rounded-2xl shadow-2xl max-h-[85vh] overflow-y-auto animate-in zoom-in-95 duration-200" 
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {vocab && <WordPopoverCard vocab={vocab} isFavorited={!!favState[vocab.id]} onToggleFav={() => onToggleFav(String(vocab.id), "word")} onClose={() => setOpenPopoverId(null)} />}
+                  {phrase && <PhrasePopoverCard phrase={phrase} isFavorited={!!favState[phrase.id]} onToggleFav={() => onToggleFav(String(phrase.id), "phrase")} onClose={() => setOpenPopoverId(null)} />}
+                  {expr && <ExpressionPopoverCard expression={expr} isFavorited={!!favState[expr.id]} onToggleFav={() => onToggleFav(String(expr.id), "expression")} onClose={() => setOpenPopoverId(null)} />}
+                </div>
+              </div>
+            )}
+          </span>
         )
       })}
     </>
