@@ -5,17 +5,17 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useCallback } from "react"
 import { toast } from "sonner"
-import { Button } from "@/components/ui/button"
+import { Button } from "@/app/components/ui/button"
 import {
   Sheet,
   SheetTrigger,
   SheetContent,
   SheetHeader,
   SheetTitle,
-} from "@/components/ui/sheet"
-import { LearningStats } from "@/components/learning-stats"
-import { SidebarCalendar } from "@/components/sidebar-calendar"
-import { LearningGuide } from "@/components/learning-guide"
+} from "@/app/components/ui/sheet"
+import { LearningStats } from "@/app/components/learning-stats"
+import { SidebarCalendar } from "@/app/components/sidebar-calendar"
+import { LearningGuide } from "@/app/components/learning-guide"
 import { useAuth } from "@/lib/auth-context"
 const navLinks = [
   //{ label: "视频库", icon: Video, href: "/" },
@@ -42,7 +42,7 @@ export function Navbar() {
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-card">
       {/* Desktop navbar */}
-      <div className="hidden h-16 items-center justify-between px-6 md:flex">
+      <div className="hidden h-16 items-center justify-between px-6 lg:!flex">
         <div className="flex items-center gap-8">
           <h1 className="flex items-center gap-2 text-lg font-bold text-foreground tracking-tight">
             <Youtube className="size-6 text-red-600" />
@@ -88,7 +88,7 @@ export function Navbar() {
       </div>
 
       {/* Mobile navbar */}
-      <div className="flex h-14 items-center justify-between px-4 md:hidden">
+      <div className="flex h-14 items-center justify-between px-4 lg:!hidden">
         <div className="flex items-center gap-3">
           <Sheet>
             <SheetTrigger asChild>
@@ -133,7 +133,8 @@ export function Navbar() {
 
               {/* Sidebar content in drawer */}
               <div className="flex flex-col gap-4 p-4">
-                <LearningStats />
+                {/* ✨ 修复：必须传入参数，否则点击三条杠会白屏 */}
+                <LearningStats activeFilter="all" onFilterChange={() => {}} />
                 <SidebarCalendar />
                 <LearningGuide />
               </div>
@@ -146,18 +147,21 @@ export function Navbar() {
         </div>
 
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="size-9 text-muted-foreground" asChild>
-            <Link href="/records">
-              <Clock className="size-5" />
-              <span className="sr-only">学习记录</span>
-            </Link>
-          </Button>
-          <Button variant="ghost" size="icon" className="size-9 text-muted-foreground" asChild>
-            <Link href="/vocabulary">
-              <CreditCard className="size-5" />
-              <span className="sr-only">英语卡片</span>
-            </Link>
-          </Button>
+          {/* 手机端仅显示图标 - 严格限制在 < 1024px */}
+          <div className="flex items-center gap-1 lg:!hidden">
+            <Button variant="ghost" size="icon" className="size-9 text-muted-foreground" asChild>
+              <Link href="/records">
+                <Clock className="size-5" />
+                <span className="sr-only">学习记录</span>
+              </Link>
+            </Button>
+            <Button variant="ghost" size="icon" className="size-9 text-muted-foreground" asChild>
+              <Link href="/vocabulary">
+                <CreditCard className="size-5" />
+                <span className="sr-only">英语卡片</span>
+              </Link>
+            </Button>
+          </div>
         </div>
       </div>
     </header>

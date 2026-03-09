@@ -12,7 +12,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/app/components/ui/dropdown-menu"
 import { useRouter } from "next/navigation" // <--- 新增路由导入
 
 const TAB_LABELS = ["最近学习", "已完成", "已收藏"] as const

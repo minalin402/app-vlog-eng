@@ -1,9 +1,9 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Calendar } from "@/components/ui/calendar"
-import { Spinner } from "@/components/ui/spinner"
+import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card"
+import { Calendar } from "@/app/components/ui/calendar"
+import { Spinner } from "@/app/components/ui/spinner"
 import { cn } from "@/lib/utils"
 import { supabase } from "@/lib/supabase-client" // 导入真实客户端
 import { isSameDay, startOfMonth, endOfMonth } from "date-fns"
@@ -58,7 +58,7 @@ export function SidebarCalendar() {
   }, [currentMonth, loadLearnedDates])
 
   return (
-    <Card className="border-border shadow-sm">
+    <Card className="w-full border-border shadow-sm">
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center gap-2 text-sm font-semibold text-foreground">
           学习日历

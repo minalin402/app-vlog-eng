@@ -45,7 +45,7 @@ export function LearningStats({ onFilterChange, activeFilter = "all" }: Learning
   ]
 
   return (
-    <div className="rounded-lg bg-white p-4">
+    <div className="w-full rounded-lg bg-white p-4">
       <div className="flex items-center gap-2 pb-3">
         <BarChart3 className="size-4 text-primary" />
         <h2 className="text-sm font-semibold text-foreground">学习统计</h2>

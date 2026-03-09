@@ -48,14 +48,13 @@ export function VideoCard({ video }: { video: Video }) {
   }, [isFavorite, video.id])
 
   return (
-    <Link href={`/videos/${video.id}`} className="group relative block overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-all hover:shadow-md">
+    <Link href={`/videos/${video.id}`} className="group relative flex flex-col w-full h-full overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-all hover:shadow-md">
       {/* 收藏按钮 */}
       <button onClick={handleToggleFavorite} className={cn(
         "absolute top-3 right-3 z-20 flex size-8 items-center justify-center rounded-full shadow-sm transition-all backdrop-blur-md",
         isFavorite 
           ? "bg-white/90 opacity-100" 
-          // ✨ 核心修改：默认 opacity-100 (手机端可见)；md:opacity-0 (电脑端隐藏)；md:group-hover:opacity-100 (电脑端悬停显示)
-          : "bg-black/20 opacity-100 md:opacity-0 md:group-hover:opacity-100" 
+          : "bg-black/20 opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100"
       )}>
         <Heart className={cn("size-4", isFavorite ? "fill-red-500 text-red-500" : "text-white")} />
       </button>

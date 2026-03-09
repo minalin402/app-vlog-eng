@@ -1,8 +1,8 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { VideoCard } from "@/components/video-card"
-import { Button } from "@/components/ui/button"
+import { VideoCard } from "@/app/components/video-card"
+import { Button } from "@/app/components/ui/button"
 import { useVideoLearningStatus } from "@/lib/hooks/use-video-learning-status"
 import type { Video, StatusFilter, AdvancedFilters } from "@/lib/types"
 import { SearchX } from "lucide-react"
@@ -77,7 +77,7 @@ export function VideoGrid({ statusFilter, advancedFilters, initialVideos }: Vide
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {displayedVideos.map((video) => (
           <VideoCard 
             key={video.id} 

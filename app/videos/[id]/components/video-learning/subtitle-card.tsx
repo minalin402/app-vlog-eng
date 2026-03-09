@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react"
 import { X, Volume2, Bookmark } from "lucide-react"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Popover, PopoverContent, PopoverTrigger } from "@/app/components/ui/popover"
 import type { SubtitleItem, ClickableWord, HighlightType, SubtitleToken, TokenType, VocabItem, PhraseItem, ExpressionItem } from "@/lib/video-data"
 import { parseSubtitleText } from "@/lib/video-data"
 import { ShadowingConsole } from "./shadowing-console"

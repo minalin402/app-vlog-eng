@@ -1,6 +1,10 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
+/* Tailwind v4 扫描范围配置 - 确保根目录 /app/components 被扫描 */
+@source "../app";
+@source "../components";
+
 @custom-variant dark (&:is(.dark *));
 
 :root {

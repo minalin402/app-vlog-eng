@@ -1,9 +1,9 @@
 import { MessageSquare, ChevronUp, CheckSquare } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card"
 
 export function LearningGuide() {
   return (
-    <Card className="border-border shadow-sm">
+    <Card className="w-full border-border shadow-sm">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-sm font-semibold text-foreground">

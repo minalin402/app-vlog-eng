@@ -2,8 +2,8 @@
 
 import { useMemo, useState } from "react"
 import { Filter, ChevronDown, X, Check } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
+import { Button } from "@/app/components/ui/button"
+import { Checkbox } from "@/app/components/ui/checkbox"
 import {
   Sheet,
   SheetContent,
@@ -11,8 +11,8 @@ import {
   SheetTitle,
   SheetTrigger,
   SheetFooter,
-} from "@/components/ui/sheet"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+} from "@/app/components/ui/sheet"
+import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card"
 import {
   Command,
   CommandEmpty,
@@ -20,12 +20,12 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@/components/ui/command"
+} from "@/app/components/ui/command"
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover"
+} from "@/app/components/ui/popover"
 import { cn } from "@/lib/utils"
 import type { Video, StatusFilter, AdvancedFilters } from "@/lib/types"
 
@@ -65,7 +65,7 @@ function MultiSelect({ label, options, selected, onChange }: MultiSelectProps) {
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button variant="outline" size="sm" className="w-full justify-between font-normal h-9 pr-8">
-            <span className="truncate">{displayText}</span>
+            <span className="truncate text-xs">{displayText}</span>
             <ChevronDown className="absolute right-3 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
@@ -169,8 +169,8 @@ export function FilterBar({
 
   return (
     <>
-      {/* ── 桌面端 (保持完美状态) ── */}
-      <Card className="hidden md:block border-border shadow-sm mb-4">
+      {/* ── 桌面端：>= 1024px 显示大卡片筛选器 ── */}
+      <Card className="hidden lg:block border-border shadow-sm mb-4">
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -211,8 +211,8 @@ export function FilterBar({
         </CardContent>
       </Card>
 
-      {/* ── 移动端 (完美复刻截图样式) ── */}
-      <div className="flex items-center justify-between md:hidden mb-4">
+      {/* ── 移动端：< 1024px 显示按钮 + Sheet 抽屉 ── */}
+      <div className="flex lg:hidden items-center justify-between mb-4">
         <div className="flex gap-2">
           {STATUS_FILTERS.map((s) => (
             <Button
