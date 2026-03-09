@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase-client';
 
 type MessageType = 'success' | 'error' | 'warning';
@@ -19,6 +19,8 @@ export default function LoginPage() {
   const [focusedField, setFocusedField] = useState<string | null>(null);
 
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get('redirectTo') || '/';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,9 +54,9 @@ export default function LoginPage() {
       }
 
       if (data.user) {
-        // 登录成功
+        // 登录成功，跳转到原始页面或首页
         setMessage({ type: 'success', text: '登录成功！正在跳转...' });
-        router.push('/');
+        router.push(redirectTo);
       }
     } catch (err: unknown) {
       const errorMessage =

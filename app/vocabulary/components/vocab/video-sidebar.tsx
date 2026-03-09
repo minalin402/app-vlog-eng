@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Search, MonitorPlay, ChevronLeft } from "lucide-react"
-import { useRouter } from "next/navigation"
+import Link from "next/link"
 
 interface VideoSidebarProps {
   videos: any[]
@@ -12,7 +12,6 @@ interface VideoSidebarProps {
 
 export function VideoSidebar({ videos, activeVideoId, onSelectVideo }: VideoSidebarProps) {
   const [search, setSearch] = useState("")
-  const router = useRouter()
 
   const filtered = videos.filter((v) => v.title.toLowerCase().includes(search.toLowerCase()))
 
@@ -20,12 +19,12 @@ export function VideoSidebar({ videos, activeVideoId, onSelectVideo }: VideoSide
     <aside className="w-64 shrink-0 border-r border-border bg-card flex flex-col h-full">
       <div className="p-4 border-b border-border">
         {/* 返回首页按钮 */}
-        <button 
-          onClick={() => router.push("/")}
+        <Link
+          href="/"
           className="flex items-center gap-1 mb-4 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
         >
           <ChevronLeft className="size-4" /> 返回首页
-        </button>
+        </Link>
         
         <h2 className="text-lg font-bold text-foreground mb-3">视频列表</h2>
         <div className="relative">
@@ -58,13 +57,13 @@ export function VideoSidebar({ videos, activeVideoId, onSelectVideo }: VideoSide
             </button>
             
             {/* 点击图标，直接跳转到视频学习页 */}
-            <button
-              onClick={() => router.push(`/videos/${video.id}`)}
+            <Link
+              href={`/videos/${video.id}`}
               className="p-2 shrink-0 text-muted-foreground hover:text-[#3b82f6] hover:bg-[#3b82f6]/10 rounded-md transition-colors"
               title="前往学习该视频"
             >
               <MonitorPlay className="h-4 w-4" />
-            </button>
+            </Link>
           </div>
         ))}
       </div>

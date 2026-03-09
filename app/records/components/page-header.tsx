@@ -13,7 +13,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/app/components/ui/dropdown-menu"
-import { useRouter } from "next/navigation" // <--- 新增路由导入
+import Link from "next/link"
 
 const TAB_LABELS = ["最近学习", "已完成", "已收藏"] as const
 export type TabKey = (typeof TAB_LABELS)[number]
@@ -30,15 +30,13 @@ interface PageHeaderProps {
 }
 
 export function PageHeader({ activeTab, onTabChange }: PageHeaderProps) {
-  const router = useRouter() // <--- 初始化 router
-
   return (
     <>
       <header className="sticky top-0 z-30 border-b border-border bg-card">
         <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4">
           {/* === 修改 1：点击返回首页 === */}
-          <button 
-            onClick={() => router.push("/")}
+          <Link
+            href="/"
             className="flex items-center text-foreground transition-colors hover:text-muted-foreground"
           >
             <ChevronLeft className="h-5 w-5 shrink-0" />
@@ -46,7 +44,7 @@ export function PageHeader({ activeTab, onTabChange }: PageHeaderProps) {
               学习记录
             </span>
             <span className="text-lg font-bold md:hidden">{activeTab}</span>
-          </button>
+          </Link>
 
           {/* === 修改 2：已删除桌面端的登出按钮 === */}
 

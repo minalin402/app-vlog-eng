@@ -3,8 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google"
 import "./globals.css"
 import { ErrorBoundaryWrapper } from "./components/error-boundary"
 import { AuthProvider } from "@/lib/auth-context"
+import { SWRProvider } from "@/lib/swr-provider"
 import { Toaster } from "sonner"
-// ✨ 1. 引入 Analytics 组件
 import { Analytics } from "@vercel/analytics/react"
 
 const geistSans = Geist({
@@ -31,12 +31,13 @@ export default function RootLayout({
     <html lang="zh-CN">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <ErrorBoundaryWrapper>
-          <AuthProvider>
-            {children}
-            <Toaster />
-            {/* ✨ 2. 在 AuthProvider 内部（或外部均可）加上探针 */}
-            <Analytics />
-          </AuthProvider>
+          <SWRProvider>
+            <AuthProvider>
+              {children}
+              <Toaster />
+              <Analytics />
+            </AuthProvider>
+          </SWRProvider>
         </ErrorBoundaryWrapper>
       </body>
     </html>

@@ -1,6 +1,6 @@
 import Image from "next/image"
+import Link from "next/link"
 import { Heart } from "lucide-react"
-import { useRouter } from "next/navigation"
 
 export interface VideoCardData {
   id: string
@@ -19,12 +19,10 @@ interface VideoCardProps {
 }
 
 export function VideoCard({ video, onToggleFavorite }: VideoCardProps) {
-  const router = useRouter()
-
   return (
-    <div 
-      className="group relative rounded-xl bg-card shadow-sm transition-shadow hover:shadow-md cursor-pointer"
-      onClick={() => router.push(`/videos/${video.id}`)}
+    <Link
+      href={`/videos/${video.id}`}
+      className="group relative block rounded-xl bg-card shadow-sm transition-shadow hover:shadow-md"
     >
       {/* 封面图区域 */}
       <div className="relative aspect-video w-full overflow-hidden rounded-t-xl">
@@ -78,6 +76,6 @@ export function VideoCard({ video, onToggleFavorite }: VideoCardProps) {
           )}
         </div>
       </div>
-    </div>
+    </Link>
   )
 }
