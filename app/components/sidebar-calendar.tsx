@@ -59,20 +59,23 @@ export function SidebarCalendar() {
 
   return (
     <Card className="w-full border-border shadow-sm">
-      <CardHeader className="pb-2">
+      {/* 1. 收紧标题上下的留白：重新定义 p-4 覆盖默认大留白，并把底边距缩小到 pb-0 */}
+      <CardHeader className="pt-1 pb-0 px-4">{/* ✨ 1. 彻底干掉底部的留白 (pb-0) */}
         <CardTitle className="flex items-center gap-2 text-sm font-semibold text-foreground">
           学习日历
           {isLoading && <Spinner className="size-3 text-muted-foreground" />}
         </CardTitle>
       </CardHeader>
-<CardContent className="px-1 md:px-2 pb-3 w-full">
-        {/* ✨ 注意这里：div 不要提前闭合，要把整个 Calendar 包起来！ */}
+
+      {/* 2. 收紧日历和标题的距离：通过 pt-3 精准控制间距 */}
+      <CardContent className="px-2 pt-0 pb-3 w-full -mt-2">{/* ✨ 2. 顶部距离改成 pt-1，极度贴近标题 */}
         <div className="w-full overflow-hidden [&_.rdp]:w-full [&_table]:w-full [&_th]:w-[14.28%] [&_td]:w-[14.28%] [&_td]:p-0 [&_th]:p-0">
-        <Calendar
+          <Calendar
             mode="single"
             month={currentMonth}
             onMonthChange={setCurrentMonth}
-            className="w-full"
+            className="w-full p-0" 
+
             modifiers={{
               learned: learnedDates,
               todayNotLearned: (date) => isSameDay(date, new Date()) && !learnedDates.some((d) => isSameDay(d, date)),
@@ -87,7 +90,7 @@ export function SidebarCalendar() {
               // 彻底清除原本的丑陋灰色背景
               day_today: "", 
               // ✨ 核心修复：用 h-8 w-8 固定尺寸，加上 rounded-full 强制变成完美的正圆形！
-              day: "mx-auto flex h-7 w-7 items-center justify-center rounded-full text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground",
+              day: "mx-auto flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground",
             }}
           />  
         </div> {/* ✨ div 的闭合标签在这里！ */}

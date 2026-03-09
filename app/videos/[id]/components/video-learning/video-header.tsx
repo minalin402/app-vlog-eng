@@ -16,7 +16,7 @@ export function VideoHeader({ video }: VideoHeaderProps) {
       <div className="flex items-center gap-2 min-w-0">
         <button
           onClick={() => router.back()}
-          className="p-1 rounded-md hover:bg-accent transition-colors shrink-0"
+          className="p-1 rounded-md hover:bg-accent transition-colors shrink-0 -ml-2"
           aria-label="返回"
         >
           <ChevronLeft className="size-5 text-foreground" />

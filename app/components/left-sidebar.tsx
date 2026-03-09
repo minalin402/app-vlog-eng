@@ -11,7 +11,7 @@ interface LeftSidebarProps {
 
 export function LeftSidebar({ filter, onFilterChange }: LeftSidebarProps) {
   return (
-    <aside className="hidden lg:flex flex-col gap-4 shrink-0 lg:w-[22%] xl:w-[20%] lg:min-w-[280px] lg:max-w-[350px]">
+    <aside className="hidden lg:flex flex-col gap-4 shrink-0 lg:w-[18%] lg:min-w-[240px] lg:max-w-[280px]">
       <LearningStats activeFilter={filter} onFilterChange={onFilterChange} />
       <SidebarCalendar />
       <LearningGuide />

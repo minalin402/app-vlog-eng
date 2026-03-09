@@ -31,7 +31,7 @@ function Skeleton({ className }: { className?: string }) {
 }
 function PageSkeleton() {
   return (
-    <div className="h-screen flex flex-col bg-muted/40 overflow-hidden">
+    <div className="h-[100dvh] flex flex-col bg-muted/40 overflow-hidden">
       <div className="h-14 bg-card shadow-sm shrink-0" />
       <div className="hidden md:flex flex-1 overflow-hidden p-4 gap-4">
         <div className="w-[50%] flex flex-col gap-3">
@@ -742,7 +742,7 @@ const rafCallback = useCallback(() => {
   if (isLoading) return <PageSkeleton />
 
   return (
-    <div className="h-screen flex flex-col bg-muted/40 overflow-hidden">
+    <div className="h-[100dvh] flex flex-col bg-muted/40 overflow-hidden">
       <VideoHeader video={videoData} />
 
       {/* ===== DESKTOP (仅在电脑端渲染，彻底消灭冲突) ===== */}
@@ -861,7 +861,7 @@ const rafCallback = useCallback(() => {
 
       {/* ===== MOBILE (仅在手机端渲染) ===== */}
       {isMobile && (
-        <div className="flex-1 flex flex-col pb-20 overflow-hidden relative">
+        <div className="flex-1 flex flex-col overflow-hidden relative">
           
           {/* ✨ 核心修复：全屏/小窗/恢复按钮 大融合！ */}
           <div
@@ -977,26 +977,28 @@ const rafCallback = useCallback(() => {
 
       {/* ===== 找回丢失的手机端底部操作栏 ===== */}
       {isMobile && (
-        <MobilePlaybackBar
-          isPlaying={isPlaying}
-          playbackSpeed={playbackSpeed}
-          subtitleMode={subtitleMode}
-          playbackMode={playbackMode}
-          sentenceMode={sentenceMode}
-          practiceMode={practiceMode}
-          fontSize={fontSize}
-          loopCount={loopCount}
-          autoNext={autoNext}
-          onPlayPause={handlePlayPause}
-          onSpeedChange={setPlaybackSpeed}
-          onSubtitleModeChange={setSubtitleMode}
-          onPlaybackModeChange={setPlaybackMode}
-          onSentenceModeChange={setSentenceMode}
-          onPracticeModeChange={handlePracticeModeChange}
-          onFontSizeChange={setFontSize}
-          onLoopCountChange={setLoopCount}
-          onAutoNextChange={setAutoNext}
-        />
+        <div className="w-full shrink-0 z-50 bg-background border-t border-border/50 shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)]">
+          <MobilePlaybackBar
+            isPlaying={isPlaying}
+            playbackSpeed={playbackSpeed}
+            subtitleMode={subtitleMode}
+            playbackMode={playbackMode}
+            sentenceMode={sentenceMode}
+            practiceMode={practiceMode}
+            fontSize={fontSize}
+            loopCount={loopCount}
+            autoNext={autoNext}
+            onPlayPause={handlePlayPause}
+            onSpeedChange={setPlaybackSpeed}
+            onSubtitleModeChange={setSubtitleMode}
+            onPlaybackModeChange={setPlaybackMode}
+            onSentenceModeChange={setSentenceMode}
+            onPracticeModeChange={handlePracticeModeChange}
+            onFontSizeChange={setFontSize}
+            onLoopCountChange={setLoopCount}
+            onAutoNextChange={setAutoNext}
+          />
+        </div>
       )}
 
       <DictionaryPopup word={selectedWord} anchorPos={wordAnchorPos} onClose={handleCloseWord} />

@@ -86,7 +86,7 @@ export function MobilePlaybackBar({
       {/* Backdrop */}
       {activeSheet && (
         <div
-          className="fixed inset-0 z-40 bg-[#000000]/30 md:hidden"
+          className="fixed inset-0 z-40 bg-[#000000]/30"
           onClick={closeSheet}
         />
       )}
@@ -95,7 +95,7 @@ export function MobilePlaybackBar({
 
       {/* Subtitle sheet */}
       {activeSheet === "subtitle" && (
-        <div className="fixed left-0 right-0 bottom-0 z-40 md:hidden bg-card rounded-t-2xl shadow-xl pb-20">
+        <div className="fixed left-0 right-0 bottom-0 z-40 bg-card rounded-t-2xl shadow-xl pb-6 safe-area-bottom">
           <div className="flex justify-center pt-2 pb-1">
             <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
           </div>
@@ -150,7 +150,7 @@ export function MobilePlaybackBar({
 
       {/* Speed sheet */}
       {activeSheet === "speed" && (
-        <div className="fixed left-0 right-0 bottom-0 z-40 md:hidden bg-card rounded-t-2xl shadow-xl pb-20">
+        <div className="fixed left-0 right-0 bottom-0 z-40 md:hidden bg-card rounded-t-2xl shadow-xl pb-6 safe-area-bottom">
           <div className="flex justify-center pt-2 pb-1">
             <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
           </div>
@@ -173,7 +173,7 @@ export function MobilePlaybackBar({
 
       {/* Loop sheet */}
       {activeSheet === "loop" && (
-        <div className="fixed left-0 right-0 bottom-0 z-40 md:hidden bg-card rounded-t-2xl shadow-xl pb-20">
+        <div className="fixed left-0 right-0 bottom-0 z-40 md:hidden bg-card rounded-t-2xl shadow-xl pb-6 safe-area-bottom">
           <div className="flex justify-center pt-2 pb-1">
             <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
           </div>
@@ -264,7 +264,7 @@ export function MobilePlaybackBar({
 
       {/* Practice sheet */}
       {activeSheet === "practice" && (
-        <div className="fixed left-0 right-0 bottom-0 z-40 md:hidden bg-card rounded-t-2xl shadow-xl pb-20">
+        <div className="fixed left-0 right-0 bottom-0 z-40 md:hidden bg-card rounded-t-2xl shadow-xl pb-6 safe-area-bottom">
           <div className="flex justify-center pt-2 pb-1">
             <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
           </div>
@@ -310,7 +310,7 @@ export function MobilePlaybackBar({
       )}
 
       {/* ======= BOTTOM TAB BAR - always on top ======= */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-card shadow-[0_-2px_12px_rgba(0,0,0,0.08)] md:hidden safe-area-bottom">
+      <div className="w-full bg-card safe-area-bottom">
         <div className="flex items-center justify-around px-4 py-2">
           {/* 双语 */}
           <button
