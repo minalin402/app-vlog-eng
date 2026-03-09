@@ -176,3 +176,33 @@
     display: none; /* Chrome, Safari and Opera */
   }
 }
+
+/* Resizable Panels 拖拽手柄样式 */
+[data-separator] {
+  position: relative;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+[data-separator]:hover {
+  background-color: hsl(var(--primary) / 0.5) !important;
+}
+
+[data-separator]:active {
+  background-color: hsl(var(--primary)) !important;
+}
+
+/* 拖拽时的视觉反馈 */
+[data-separator][data-resize-handle-active] {
+  background-color: hsl(var(--primary)) !important;
+}
+
+/* 增强拖拽区域的可点击性 */
+[data-separator]::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -4px;
+  right: -4px;
+}

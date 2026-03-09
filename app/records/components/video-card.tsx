@@ -48,7 +48,7 @@ export function VideoCard({ video, onToggleFavorite }: VideoCardProps) {
             onToggleFavorite(video.id, video.favorited)
           }}
           className={`absolute top-3 right-3 z-20 p-1.5 transition-all hover:scale-110 ${
-            video.favorited ? "opacity-100" : "opacity-60 md:opacity-0 md:group-hover:opacity-100"
+            video.favorited ? "opacity-100" : "opacity-60 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100"
           }`}
         >
           <Heart 

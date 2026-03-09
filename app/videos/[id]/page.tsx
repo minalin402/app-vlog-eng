@@ -24,6 +24,7 @@ import { VocabPanel } from "./components/video-learning/vocab-panel"
 import { MobilePlaybackBar } from "./components/video-learning/mobile-playback-bar"
 import { Clapperboard, X, Youtube } from "lucide-react"
 import { fetchUserFavorites, toggleFavoriteAPI } from "@/lib/favorite-api"
+import { Group as PanelGroup, Panel, Separator as PanelResizeHandle } from "react-resizable-panels"
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 function Skeleton({ className }: { className?: string }) {
   return <div className={`animate-pulse bg-muted rounded-lg ${className ?? ""}`} />
@@ -318,7 +319,7 @@ export default function VideoLearningPage() {
   // === 新增：物理隔离桌面端与移动端 ===
   const [isMobile, setIsMobile] = useState(false)
   useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 768)
+    const checkMobile = () => setIsMobile(window.innerWidth < 1024)
     checkMobile() // 首次加载执行
     window.addEventListener("resize", checkMobile)
     return () => window.removeEventListener("resize", checkMobile)
@@ -746,9 +747,13 @@ const rafCallback = useCallback(() => {
 
       {/* ===== DESKTOP (仅在电脑端渲染，彻底消灭冲突) ===== */}
       {!isMobile && (
-        <div className="flex flex-1 overflow-hidden">
-          {/* Left: Video + Description */}
-          <div className="w-[50%] shrink-0 flex flex-col p-4 overflow-hidden">
+        <PanelGroup orientation="horizontal" className="flex-1">
+          {/* Left Panel: Video + Description */}
+          <Panel
+            defaultSize={showVocabPanel ? 40 : 50}
+            minSize={30}
+            className="flex flex-col p-4 overflow-hidden"
+          >
             <div className="shrink-0 rounded-2xl overflow-hidden shadow-md">
               <VideoPlayer
                 videoRef={videoRef}
@@ -769,12 +774,20 @@ const rafCallback = useCallback(() => {
             <div className="mt-3 shrink-0">
               <VideoDescription video={videoData} />
             </div>
-          </div>
+          </Panel>
 
-          {/* Middle: Subtitles */}
-          <div className={`flex flex-col overflow-hidden transition-all py-3 pr-3 ${
-            showVocabPanel ? "w-[25%]" : "w-[50%]"
-          }`}>
+          {/* Resize Handle 1 */}
+          <PanelResizeHandle className="group flex w-4 cursor-col-resize items-center justify-center outline-none">
+            {/* iPad 分屏同款：中间的小胶囊提示器 */}
+            <div className="h-8 w-[4px] rounded-full bg-border/80 transition-all duration-200 group-hover:h-10 group-hover:bg-blue-400 group-active:bg-blue-600" />
+          </PanelResizeHandle>
+
+          {/* Middle Panel: Subtitles */}
+          <Panel
+            defaultSize={showVocabPanel ? 30 : 50}
+            minSize={20}
+            className="flex flex-col overflow-hidden py-3 pr-3"
+          >
             <div className="flex flex-col flex-1 overflow-hidden bg-card rounded-2xl shadow-md">
               <SubtitleToolbar
                 subtitleMode={subtitleMode}
@@ -808,32 +821,42 @@ const rafCallback = useCallback(() => {
                   vocabularies={videoData?.vocabularies}
                   phrases={videoData?.phrases}
                   expressions={videoData?.expressions}
-                  // === 新增的这两行 ===
                   favState={favState}
                   onToggleFav={handleToggleFavorite}
                 />
               </div>
             </div>
-          </div>
+          </Panel>
 
-          {/* Right: Vocab Panel */}
+          {/* Resize Handle 2 & Right Panel: Vocab Panel (条件渲染) */}
           {showVocabPanel && (
-            <div className="w-[25%] shrink-0 overflow-hidden py-3 pr-3">
-              <div className="h-full bg-card rounded-2xl shadow-md overflow-hidden">
-                <VocabPanel
-                  open={showVocabPanel}
-                  onClose={() => setShowVocabPanel(false)}
-                  vocabularies={videoData?.vocabularies}
-                  phrases={videoData?.phrases}
-                  expressions={videoData?.expressions}
-                  onClickTimestamp={handleClickTimestamp}
-                  favState={favState}
-                  onToggleFav={handleToggleFavorite}
-                />
-              </div>
-            </div>
+            <>
+              <PanelResizeHandle className="group flex w-4 cursor-col-resize items-center justify-center outline-none">
+                {/* iPad 分屏同款：中间的小胶囊提示器 */}
+                <div className="h-8 w-[4px] rounded-full bg-border/80 transition-all duration-200 group-hover:h-10 group-hover:bg-blue-400 group-active:bg-blue-600" />
+              </PanelResizeHandle>
+
+              <Panel
+                defaultSize={30}
+                minSize={20}
+                className="overflow-hidden py-3 pr-3"
+              >
+                <div className="h-full bg-card rounded-2xl shadow-md overflow-hidden">
+                  <VocabPanel
+                    open={showVocabPanel}
+                    onClose={() => setShowVocabPanel(false)}
+                    vocabularies={videoData?.vocabularies}
+                    phrases={videoData?.phrases}
+                    expressions={videoData?.expressions}
+                    onClickTimestamp={handleClickTimestamp}
+                    favState={favState}
+                    onToggleFav={handleToggleFavorite}
+                  />
+                </div>
+              </Panel>
+            </>
           )}
-        </div>
+        </PanelGroup>
       )}
 
       {/* ===== MOBILE (仅在手机端渲染) ===== */}
