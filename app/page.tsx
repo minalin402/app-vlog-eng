@@ -80,7 +80,14 @@ export default function DashboardPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <Navbar />
+      <Navbar 
+        activeFilter={statusFilter === "all" ? "all" : statusFilter === "learned" ? "completed" : "pending"}
+        onFilterChange={(type) => {
+          if (type === "all") setStatusFilter("all")
+          else if (type === "completed") setStatusFilter("learned")
+          else setStatusFilter("unlearned")
+        }}
+      />
       <div className="flex flex-col lg:flex-row flex-1 gap-4 p-4 lg:p-6 max-w-[1600px] mx-auto w-full">
         {/* 左侧边栏：>= 1024px 显示 */}
         <LeftSidebar

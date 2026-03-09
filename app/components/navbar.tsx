@@ -3,7 +3,7 @@
 import { Video, BookOpen, Layers, LogOut, User, Menu, Clock, CreditCard, Youtube, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useCallback } from "react"
+import { useCallback, useState } from "react"
 import { toast } from "sonner"
 import { Button } from "@/app/components/ui/button"
 import {
@@ -17,15 +17,23 @@ import { LearningStats } from "@/app/components/learning-stats"
 import { SidebarCalendar } from "@/app/components/sidebar-calendar"
 import { LearningGuide } from "@/app/components/learning-guide"
 import { useAuth } from "@/lib/auth-context"
+type FilterType = "all" | "completed" | "pending"
+
+interface NavbarProps {
+  activeFilter?: FilterType
+  onFilterChange?: (type: FilterType) => void
+}
+
 const navLinks = [
   //{ label: "视频库", icon: Video, href: "/" },
   { label: "学习记录", icon: BookOpen, href: "/records" },
   { label: "英语卡片", icon: Layers, href: "/vocabulary" },
 ]
 
-export function Navbar() {
+export function Navbar({ activeFilter = "all", onFilterChange }: NavbarProps) {
   const router = useRouter()
   const { user, loading: isLoading, signOut } = useAuth()
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   const handleLogout = useCallback(async () => {
     try {
@@ -90,7 +98,7 @@ export function Navbar() {
       {/* Mobile navbar */}
       <div className="flex h-14 items-center justify-between px-4 lg:!hidden">
         <div className="flex items-center gap-3">
-          <Sheet>
+          <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="size-9">
                 <Menu className="size-5" />
@@ -133,8 +141,14 @@ export function Navbar() {
 
               {/* Sidebar content in drawer */}
               <div className="flex flex-col gap-4 p-4">
-                {/* ✨ 修复：必须传入参数，否则点击三条杠会白屏 */}
-                <LearningStats activeFilter="all" onFilterChange={() => {}} />
+                {/* ✨ 2. 修改学习统计：点击筛选后，通知抽屉关闭 */}
+                <LearningStats 
+                  activeFilter={activeFilter} 
+                  onFilterChange={(type) => {
+                    if (onFilterChange) onFilterChange(type) // 第一步：通知首页去过滤视频
+                    setIsMobileMenuOpen(false)               // 第二步：立刻关掉当前这个抽屉
+                  }} 
+                />
                 <SidebarCalendar />
                 <LearningGuide />
               </div>
