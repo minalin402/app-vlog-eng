@@ -237,8 +237,8 @@ export default function DynamicActivation() {
     <>
       <ToastContainer toasts={toasts} onRemove={removeToast} />
 
-      <div className="min-h-screen bg-gradient-to-br from-blue-100 via-indigo-50 to-purple-100 flex items-center justify-center p-4">
-        <div className="w-full max-w-md bg-white rounded-3xl shadow-xl px-8 py-10">
+      <div className="min-h-screen bg-gradient-to-br from-blue-100 via-indigo-50 to-purple-100 flex items-center justify-center p-8 sm:p-4">
+        <div className="w-full max-w-md bg-white rounded-3xl shadow-xl px-6 py-6 sm:px-8 sm:py-10">
 
           {/* ── 头部 ─────────────────────────────────────────── */}
           <div className="flex flex-col items-center mb-7">

@@ -68,34 +68,28 @@ export function SidebarCalendar() {
 <CardContent className="px-1 md:px-2 pb-3 w-full">
         {/* ✨ 注意这里：div 不要提前闭合，要把整个 Calendar 包起来！ */}
         <div className="w-full overflow-hidden [&_.rdp]:w-full [&_table]:w-full [&_th]:w-[14.28%] [&_td]:w-[14.28%] [&_td]:p-0 [&_th]:p-0">
-          <Calendar
+        <Calendar
             mode="single"
             month={currentMonth}
             onMonthChange={setCurrentMonth}
             className="w-full"
-            components={{
-              DayButton: ({ day, modifiers, ...props }) => {
-                const learned = learnedDates.some((d) => isSameDay(d, day.date))
-                const isToday = isSameDay(day.date, new Date())
-                const outside = modifiers.outside
-
-                return (
-                  <button
-                    {...props}
-                    className={cn(
-                      "mx-auto flex aspect-square w-[85%] max-w-[32px] items-center justify-center text-sm font-normal transition-colors",
-                      learned && "bg-green-100 text-green-600 rounded-full font-bold hover:bg-green-200",
-                      isToday && !learned && "bg-blue-500 text-white rounded-full font-bold",
-                      !learned && !isToday && "hover:bg-accent rounded-md",
-                      outside && "text-muted-foreground opacity-50"
-                    )}
-                  >
-                    {day.date.getDate()}
-                  </button>
-                )
-              },
+            modifiers={{
+              learned: learnedDates,
+              todayNotLearned: (date) => isSameDay(date, new Date()) && !learnedDates.some((d) => isSameDay(d, date)),
             }}
-          />
+            modifiersClassNames={{
+              // 绿色的已学圆圈
+              learned: "bg-green-100 text-green-600 font-bold hover:bg-green-200",
+              // 蓝色的今日圆圈
+              todayNotLearned: "bg-blue-500 text-white font-bold shadow-sm hover:bg-blue-600",
+            }}
+            classNames={{
+              // 彻底清除原本的丑陋灰色背景
+              day_today: "", 
+              // ✨ 核心修复：用 h-8 w-8 固定尺寸，加上 rounded-full 强制变成完美的正圆形！
+              day: "mx-auto flex h-7 w-7 items-center justify-center rounded-full text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground",
+            }}
+          />  
         </div> {/* ✨ div 的闭合标签在这里！ */}
       </CardContent>
     </Card>

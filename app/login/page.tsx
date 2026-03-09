@@ -72,9 +72,8 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-blue-100 via-violet-50 to-purple-100 flex items-center justify-center p-4">
-      <div className="w-full sm:max-w-md bg-white rounded-3xl shadow-xl shadow-violet-100/60 p-8">
-
+    <main className="min-h-screen bg-gradient-to-br from-blue-100 via-violet-50 to-purple-100 flex items-center justify-center p-8 sm:p-4">
+      <div className="w-full sm:max-w-md bg-white rounded-3xl shadow-xl shadow-violet-100/60 p-6 sm:p-8">   
         {/* YouTube Icon */}
         <div className="flex justify-center mb-6">
           <div className="w-16 h-12 bg-red-600 rounded-xl flex items-center justify-center shadow-md shadow-red-200">
