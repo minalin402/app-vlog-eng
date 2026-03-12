@@ -20,10 +20,7 @@ export function DashboardClient({ initialVideos }: DashboardClientProps) {
   })
   const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc")
 
-  // ✨ 直接在内存里把数据算好，耗时 0 毫秒！
-  const totalVideos = initialVideos.length
-  const learnedVideos = initialVideos.filter(v => (v as any).status === 'learned').length
-
+  // ✨ 直接对全量数据进行排序和过滤，毫秒级完成
   const sortedVideos = useMemo(() => {
     return [...initialVideos].sort((a, b) => {
       const dateA = a.created_at ? new Date(a.created_at).getTime() : 0
@@ -46,24 +43,17 @@ export function DashboardClient({ initialVideos }: DashboardClientProps) {
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      {/* 传给 Navbar */}
       <Navbar 
         activeFilter={getFilterType(statusFilter)}
         onFilterChange={handleFilterChange}
-        total={totalVideos}
-        learned={learnedVideos}
       />
-      
       <div className="flex flex-col lg:flex-row flex-1 gap-4 p-4 lg:p-6 max-w-[1600px] mx-auto w-full">
-        {/* 传给 LeftSidebar */}
         <LeftSidebar
           filter={getFilterType(statusFilter)}
           onFilterChange={handleFilterChange}
-          //total={totalVideos}
-          //learned={learnedVideos}
         />
-        
         <main className="flex min-w-0 flex-1 flex-col gap-0.5">
+          {/* ✨ 这里的 FilterBar 现在能感知到所有博主和分类了 */}
           <FilterBar
             videos={initialVideos}
             statusFilter={statusFilter}
@@ -71,17 +61,13 @@ export function DashboardClient({ initialVideos }: DashboardClientProps) {
             onStatusChange={setStatusFilter}
             onAdvancedChange={setAdvancedFilters}
           />
-
           <div className="flex items-center justify-between px-1 py-0.5 mt-2">
             <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">视频列表</span>
-            <Button 
-              variant="ghost" size="sm" className="h-7 gap-1.5 text-[11px]" 
-              onClick={() => setSortOrder(sortOrder === "desc" ? "asc" : "desc")}
-            >
+            <Button variant="ghost" size="sm" className="h-7 gap-1.5 text-[11px]" onClick={() => setSortOrder(sortOrder === "desc" ? "asc" : "desc")}>
               {sortOrder === "desc" ? <><ArrowDownWideNarrow className="size-3.5" /><span>最新发布</span></> : <><ArrowUpNarrowWide className="size-3.5" /><span>最早发布</span></>}
             </Button>
           </div>
-
+          {/* ✨ 直接传给 Grid 即可 */}
           <VideoGrid 
             initialVideos={sortedVideos} 
             statusFilter={statusFilter} 

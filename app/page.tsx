@@ -19,19 +19,18 @@ async function fetchAllVideoData() {
   
   // 2. ✨ 核心优化：使用 Promise.all 并行拉取 3 张表的数据
   // 这样只要花费最慢那一个请求的时间，而不是串行等待
-  const [
+const [
     { data: videosData, error: videosError },
     { data: learningData },
     { data: favoritesData }
   ] = await Promise.all([
     supabase.from('videos')
       .select('id, title, description, duration, difficulty, cover_url, creator, topics, accent, created_at')
-      .order('created_at', { ascending: false })
-      .limit(20), 
-    // ✨ 修复 1：在这里多加一个 progress 字段
+      .order('created_at', { ascending: false }), // ✨ 删除了 .limit(20)，一次性拿全
     supabase.from('user_learning_progress').select('video_id, status, progress').eq('user_id', user.id),
     supabase.from('user_favorites').select('video_id').eq('user_id', user.id)
   ])
+
   if (videosError) {
     console.error('Failed to fetch videos:', videosError)
     return []
