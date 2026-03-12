@@ -30,30 +30,21 @@ export async function getVideoDataServer(videoId: string): Promise<ServerVideoDa
   const supabase = await createClient()
 
   try {
-    // A. 查视频基础信息
-    const { data: videoRow, error: videoError } = await supabase
-      .from('videos')
-      .select('*')
-      .eq('id', videoId)
-      .single()
+    // ✨ 核心性能优化：利用 Promise.all 并行发起查询，打破串行阻塞
+    const [
+      { data: videoRow, error: videoError },
+      { data: subData },
+      { data: vocabData }
+    ] = await Promise.all([
+      supabase.from('videos').select('*').eq('id', videoId).single(),
+      supabase.from('subtitles').select('*').eq('video_id', videoId).order('start_time', { ascending: true }),
+      supabase.from('vocabulary_items').select('*').eq('video_id', videoId)
+    ])
 
     if (videoError || !videoRow) {
       console.error('视频不存在:', videoError)
       return null
     }
-
-    // B. 查字幕
-    const { data: subData } = await supabase
-      .from('subtitles')
-      .select('*')
-      .eq('video_id', videoId)
-      .order('start_time', { ascending: true })
-
-    // C. 查教研知识点
-    const { data: vocabData } = await supabase
-      .from('vocabulary_items')
-      .select('*')
-      .eq('video_id', videoId)
 
     // 类型断言以避免 TypeScript 错误
     const video = videoRow as any

@@ -1,6 +1,8 @@
 "use client"
 
-import { useState, useRef, useEffect, useCallback, memo } from "react"
+import { useState, useRef, useEffect, useCallback, memo, useMemo } from "react"
+import dynamic from "next/dynamic"
+import { Virtuoso, type VirtuosoHandle } from "react-virtuoso"
 import { type VideoDetail } from "@/lib/video-api"
 import { type SubtitleItem, type ClickableWord } from "@/lib/video-data"
 import {
@@ -14,14 +16,31 @@ import { VideoPlayer } from "./components/video-learning/video-player"
 import { VideoDescription } from "./components/video-learning/video-description"
 import { SubtitleToolbar } from "./components/video-learning/subtitle-toolbar"
 import { SubtitleCard } from "./components/video-learning/subtitle-card"
-import { DictionaryPopup } from "./components/video-learning/dictionary-modal"
-import { ExportModal } from "./components/video-learning/export-modal"
-import { ResetDialog } from "./components/video-learning/reset-dialog"
-import { VocabPanel } from "./components/video-learning/vocab-panel"
 import { MobilePlaybackBar } from "./components/video-learning/mobile-playback-bar"
 import { Clapperboard, X, Youtube } from "lucide-react"
 import { fetchUserFavorites, toggleFavoriteAPI } from "@/lib/favorite-api"
 import { Group as PanelGroup, Panel, Separator as PanelResizeHandle } from "react-resizable-panels"
+
+// 动态加载弹窗和面板组件，优化首屏加载性能
+const VocabPanel = dynamic(
+  () => import("./components/video-learning/vocab-panel").then((mod) => mod.VocabPanel),
+  { ssr: false }
+)
+
+const ExportModal = dynamic(
+  () => import("./components/video-learning/export-modal").then((mod) => mod.ExportModal),
+  { ssr: false }
+)
+
+const ResetDialog = dynamic(
+  () => import("./components/video-learning/reset-dialog").then((mod) => mod.ResetDialog),
+  { ssr: false }
+)
+
+const DictionaryPopup = dynamic(
+  () => import("./components/video-learning/dictionary-modal").then((mod) => mod.DictionaryPopup),
+  { ssr: false }
+)
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 function Skeleton({ className }: { className?: string }) {
   return <div className={`animate-pulse bg-muted rounded-lg ${className ?? ""}`} />
@@ -46,10 +65,10 @@ function PageSkeleton() {
   )
 }
 
-// ─── SubtitleList: static render, NEVER re-renders due to time changes ────────
-// All active-highlight logic is handled purely via DOM classList — no state.
-// Each row gets data-start / data-end / class="subtitle-line" for rAF to target.
-// ─── SubtitleList: static render, NEVER re-renders due to time changes ────────
+// ─── SubtitleList: 使用虚拟列表优化长字幕渲染性能 ────────────────────────
+// 所有高亮逻辑仍通过 DOM classList 处理，不触发 React 重渲染
+// 每行保留 data-start / data-end / class="subtitle-line" 供 rAF 定位
+// ─────────────────────────────────────────────────────────────────────────
 const SubtitleList = memo(function SubtitleList({
   subtitles,
   subtitleMode,
@@ -65,6 +84,7 @@ const SubtitleList = memo(function SubtitleList({
   expressions,
   favState,
   onToggleFav,
+  virtuosoRef,
 }: {
   subtitles: SubtitleItem[]
   subtitleMode: "bilingual" | "english" | "chinese"
@@ -80,13 +100,17 @@ const SubtitleList = memo(function SubtitleList({
   expressions?: import("@/lib/video-data").ExpressionItem[]
   favState: Record<string, boolean>
   onToggleFav: (id: string, type: "word" | "phrase" | "expression") => void
+  virtuosoRef?: React.RefObject<VirtuosoHandle | null>
 }) {
   return (
-    <>
-      {subtitles.map((sub) => (
+    <Virtuoso
+      ref={virtuosoRef}
+      data={subtitles}
+      className="hide-scrollbar"
+      itemContent={(index, sub) => (
         <div
           key={sub.id}
-          className="subtitle-line"
+          className="subtitle-line mb-4"
           data-start={sub.startTime}
           data-end={sub.endTime}
           data-id={sub.id}
@@ -110,8 +134,8 @@ const SubtitleList = memo(function SubtitleList({
             onToggleFav={onToggleFav}
           />
         </div>
-      ))}
-    </>
+      )}
+    />
   )
 })
 
@@ -136,6 +160,19 @@ export default function VideoLearningClient({
   const [learningStatus, setLearningStatus] = useState<LearningStatus>(initialLearningStatus)
   const [showResetButton, setShowResetButton] = useState(initialLearningStatus === "learned")
   
+  // ── 防抖进度更新：每10秒最多触发一次 ──────────────────────────
+  const debouncedUpdateProgress = useMemo(() => {
+    let timeoutId: NodeJS.Timeout | null = null
+    return (videoId: string, progress: number) => {
+      if (timeoutId) clearTimeout(timeoutId)
+      timeoutId = setTimeout(() => {
+        updateLearningProgress(videoId, progress).then(() => {
+          lastSavedProgressRef.current = progress
+        })
+      }, 10000) // 10秒防抖
+    }
+  }, [])
+  
   // 初始化收藏状态
   const [favState, setFavState] = useState<Record<string, boolean>>(() => {
     const initialFavs: Record<string, boolean> = {}
@@ -146,7 +183,8 @@ export default function VideoLearningClient({
   // ── Video element ref ─────────────────────────────────────────────────
   const videoRef = useRef<HTMLVideoElement>(null)
   const seekTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const subtitleScrollRef = useRef<HTMLDivElement>(null) // ✨ 新增：独立的字幕滚动容器锁
+  const subtitleScrollRef = useRef<HTMLDivElement>(null) // ✨ 独立的字幕滚动容器锁（移动端使用）
+  const virtuosoRef = useRef<VirtuosoHandle>(null) // ✨ 虚拟列表 ref（桌面端使用）
 
   // ── Player UI state (only things that drive layout / controls) ────────
   const [isPlaying, setIsPlaying] = useState(false)
@@ -334,17 +372,13 @@ const rafCallback = useCallback(() => {
           lastSavedProgressRef.current = 100
         })
       } 
-      // B. 5秒定时存盘：使用 isPlayingRef.current 确保判断准确
+      // B. 防抖进度更新：使用防抖函数，避免频繁触发
       else if (
-        isPlayingRef.current && 
-        now - lastSaveTimeRef.current > 5000 && 
+        isPlayingRef.current &&
         currentProgress !== lastSavedProgressRef.current &&
         !hasMarkedLearnedRef.current
       ) {
-        lastSaveTimeRef.current = now 
-        updateLearningProgress(videoId, currentProgress).then(() => {
-          lastSavedProgressRef.current = currentProgress
-        })
+        debouncedUpdateProgress(videoId, currentProgress)
       }
     }
     
@@ -378,25 +412,36 @@ const rafCallback = useCallback(() => {
         // Raw DOM sweep — zero React involvement
         const rows = document.querySelectorAll<HTMLElement>(".subtitle-line")
         let activeEl: HTMLElement | null = null
+        let activeIndex = -1
 
-        rows.forEach((row) => {
+        rows.forEach((row, idx) => {
           const isActive = activeSub !== null && row.dataset.id === String(activeSub.id)
           if (isActive) {
             row.classList.add("is-subtitle-active")
             activeEl = row
+            activeIndex = idx
           } else {
             row.classList.remove("is-subtitle-active")
           }
         })
 
-      // ✨ 恢复“永远在第一行”的功能，同时保持不顶起整个网页的优势
-        if (activeEl && subtitleScrollRef.current) {
-          subtitleScrollRef.current.scrollTo({
-            // ✨ 核心恢复：将 offsetTop - 24 改为 offsetTop - 12 
-            // (减去的 12px 正好抵消容器自带的 p-3 内边距，让高亮句完美、精准地顶格在第一行！)
-            top: (activeEl as HTMLElement).offsetTop - 12, 
-            behavior: "smooth"
-          })
+        // ✨ 自动滚动对齐：桌面端使用 Virtuoso，移动端使用原生滚动
+        if (activeIndex >= 0) {
+          // 桌面端：使用 Virtuoso 的 scrollToIndex
+          if (virtuosoRef.current) {
+            virtuosoRef.current.scrollToIndex({
+              index: activeIndex,
+              align: "start",
+              behavior: "smooth"
+            })
+          }
+          // 移动端：使用原生滚动
+          else if (activeEl && subtitleScrollRef.current) {
+            subtitleScrollRef.current.scrollTo({
+              top: (activeEl as HTMLElement).offsetTop - 12,
+              behavior: "smooth"
+            })
+          }
         }
 
         // Reset loop counter when switching to a new sentence
@@ -450,7 +495,7 @@ const rafCallback = useCallback(() => {
     // Schedule next frame
     rafIdRef.current = requestAnimationFrame(rafCallback)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [videoId])
+  }, [videoId, debouncedUpdateProgress])
   // Store the callback in a ref so start/stop helpers can access it
   const rafCallbackRef = useRef(rafCallback)
   useEffect(() => { rafCallbackRef.current = rafCallback }, [rafCallback])
@@ -614,6 +659,11 @@ const rafCallback = useCallback(() => {
     setSelectedWord(word)
     setWordAnchorPos(pos)
   }, [])
+  
+  // ── 用 useCallback 包裹传给 SubtitleCard 的回调，避免 memo 失效 ──
+  const handleToggleFavoriteCallback = useCallback((id: string, type: "word" | "phrase" | "expression") => {
+    handleToggleFavorite(id, type)
+  }, [])
 
   const handleCloseWord = useCallback(() => {
     setSelectedWord(null)
@@ -721,7 +771,7 @@ const rafCallback = useCallback(() => {
                 onReset={() => setShowResetDialog(true)}
                 showResetButton={showResetButton}
               />
-              <div ref={subtitleScrollRef} className="flex-1 p-3 overflow-y-auto hide-scrollbar touch-pan-y relative">
+              <div className="flex-1 p-3 overflow-hidden relative">
                 <SubtitleList
                   subtitles={subtitles}
                   subtitleMode={subtitleMode}
@@ -736,7 +786,8 @@ const rafCallback = useCallback(() => {
                   phrases={videoData?.phrases}
                   expressions={videoData?.expressions}
                   favState={favState}
-                  onToggleFav={handleToggleFavorite}
+                  onToggleFav={handleToggleFavoriteCallback}
+                  virtuosoRef={virtuosoRef}
                 />
               </div>
             </div>
@@ -764,7 +815,7 @@ const rafCallback = useCallback(() => {
                     expressions={videoData?.expressions}
                     onClickTimestamp={handleClickTimestamp}
                     favState={favState}
-                    onToggleFav={handleToggleFavorite}
+                    onToggleFav={handleToggleFavoriteCallback}
                   />
                 </div>
               </Panel>
@@ -862,9 +913,8 @@ const rafCallback = useCallback(() => {
               vocabularies={videoData?.vocabularies}
               phrases={videoData?.phrases}
               expressions={videoData?.expressions}
-              // === 新增的这两行 ===
               favState={favState}
-              onToggleFav={handleToggleFavorite}
+              onToggleFav={handleToggleFavoriteCallback}
             />
          
 

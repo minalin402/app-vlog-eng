@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo, useEffect, memo } from "react"
 import { X, Volume2, Bookmark } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/app/components/ui/popover"
 import type { SubtitleItem, ClickableWord, HighlightType, SubtitleToken, TokenType, VocabItem, PhraseItem, ExpressionItem } from "@/lib/video-data"
@@ -216,7 +216,7 @@ function RenderLegacyEnglish({ text }: { text: string }) {
   return <span>{text}</span>
 }
 
-export function SubtitleCard({
+export const SubtitleCard = memo(function SubtitleCard({
   subtitle, isActive, subtitleMode, practiceMode, fillBlankMode, onClickWord, onClickTimestamp, onPlaySegment, onPauseVideo,
   fontSizeClass = "text-sm", videoId = "", vocabularies = [], phrases = [], expressions = [],
   favState, onToggleFav
@@ -332,7 +332,7 @@ export function SubtitleCard({
       )}
     </div>
   )
-}
+})
 
 function formatTimeLabel(seconds: number): string {
   const m = Math.floor(seconds / 60)
