@@ -24,24 +24,9 @@ export function LearningStats({ onFilterChange, activeFilter = "all" }: Learning
   const unlearned = total - learned
 
   const stats: StatItem[] = [
-    {
-      label: "总期数",
-      value: total,
-      color: "text-gray-700",
-      type: "all",
-    },
-    {
-      label: "已学习",
-      value: learned,
-      color: "text-emerald-600",
-      type: "completed",
-    },
-    {
-      label: "未学习",
-      value: unlearned,
-      color: "text-blue-500",
-      type: "pending",
-    },
+    { label: "总期数", value: total, color: "text-gray-700", type: "all" },
+    { label: "已学习", value: learned, color: "text-emerald-600", type: "completed" },
+    { label: "未学习", value: unlearned, color: "text-blue-500", type: "pending" },
   ]
 
   return (
@@ -55,13 +40,9 @@ export function LearningStats({ onFilterChange, activeFilter = "all" }: Learning
           <Loader2 className="size-5 animate-spin text-muted-foreground" />
         </div>
       ) : error ? (
-        <div className="flex h-[104px] items-center justify-center text-sm text-muted-foreground">
-          加载失败，请刷新重试
-        </div>
+        <div className="flex h-[104px] items-center justify-center text-sm text-muted-foreground">加载失败</div>
       ) : !user ? (
-        <div className="flex h-[104px] items-center justify-center text-sm text-muted-foreground">
-          登录后查看学习统计
-        </div>
+        <div className="flex h-[104px] items-center justify-center text-sm text-muted-foreground">请先登录</div>
       ) : (
         <div className="grid grid-cols-3 gap-3">
           {stats.map((stat) => (
@@ -75,12 +56,8 @@ export function LearningStats({ onFilterChange, activeFilter = "all" }: Learning
                     : "hover:bg-gray-50 border-2 border-transparent"
                 }`}
             >
-              <span className={`text-3xl font-bold ${stat.color}`}>
-                {stat.value}
-              </span>
-              <span className="text-sm whitespace-nowrap text-muted-foreground">
-                {stat.label}
-              </span>
+              <span className={`text-3xl font-bold ${stat.color}`}>{stat.value}</span>
+              <span className="text-sm whitespace-nowrap text-muted-foreground">{stat.label}</span>
             </button>
           ))}
         </div>

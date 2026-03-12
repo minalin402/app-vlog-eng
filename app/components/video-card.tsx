@@ -9,7 +9,12 @@ import { supabase } from "@/lib/supabase-client"
 import { cn } from "@/lib/utils"
 import type { Video } from "@/lib/types"
 
-export function VideoCard({ video }: { video: Video }) {
+interface VideoCardProps {
+  video: Video
+  priority?: boolean
+}
+
+export function VideoCard({ video, priority = false }: VideoCardProps) {
   const [isFavorite, setIsFavorite] = useState(video.isFavorite)
 
   // ✨ 修复：定义 formattedDate
@@ -60,7 +65,14 @@ export function VideoCard({ video }: { video: Video }) {
       </button>
 
       <div className="relative aspect-video overflow-hidden">
-        <Image src={video.cover_url || '/placeholder-video.jpg'} alt={video.title} fill className="object-cover transition-transform group-hover:scale-105" />
+        <Image
+          src={video.cover_url || '/placeholder-video.jpg'}
+          alt={video.title}
+          fill
+          className="object-cover transition-transform group-hover:scale-105"
+          priority={priority}
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+        />
         <div className="absolute bottom-2 left-2 flex items-center gap-1.5">
           <span className="rounded-md bg-black/50 px-2 py-0.5 text-[10px] text-white backdrop-blur-md">@{video.creator}</span>
           <span className="rounded-md bg-blue-600 px-1.5 py-0.5 text-[10px] text-white font-medium">{video.accent}</span>

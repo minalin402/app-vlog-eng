@@ -1,4 +1,5 @@
-import { createClient } from '@supabase/supabase-js'
+// 1. ✨ 换成 ssr 专用的 browser client
+import { createBrowserClient } from '@supabase/ssr'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -10,13 +11,9 @@ if (!supabaseAnonKey) {
   throw new Error('Missing required environment variable: NEXT_PUBLIC_SUPABASE_ANON_KEY')
 }
 
-// 创建带有自定义配置的客户端
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true
-  },
+// 2. ✨ 使用 createBrowserClient，它会自动接管浏览器的 Cookie 读写，彻底打通 SSR
+// 我们保留了你原有的 global 和 db 配置，去掉了 auth 配置（因为 SSR 会自动处理）
+export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey, {
   global: {
     headers: {
       'x-app-version': process.env.npm_package_version || '1.0.0'

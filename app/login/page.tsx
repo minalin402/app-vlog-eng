@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase-client';
 
@@ -11,7 +11,7 @@ interface Message {
   text: string;
 }
 
-export default function LoginPage() {
+function LoginForm() {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState<Message | null>(null);
@@ -56,7 +56,14 @@ export default function LoginPage() {
       if (data.user) {
         // 登录成功，跳转到原始页面或首页
         setMessage({ type: 'success', text: '登录成功！正在跳转...' });
-        router.push(redirectTo);
+        
+        // ✨ 修复 1：强制刷新 Next.js 的路由缓存，让服务端重新感知身份状态
+        router.refresh();
+        
+        // ✨ 修复 2：给浏览器 300 毫秒的时间，确保 Cookie 被彻底写入硬盘，再执行软跳转
+        setTimeout(() => {
+          router.push(redirectTo);
+        }, 300);
       }
     } catch (err: unknown) {
       const errorMessage =
@@ -181,3 +188,14 @@ export default function LoginPage() {
   );
 }
 
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-violet-50">
+        <div className="text-slate-600">加载中...</div>
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
+  );
+}

@@ -1,134 +1,95 @@
-"use client"
+import { Suspense } from "react"
+import { redirect } from "next/navigation"
+import { createClient } from "@/lib/supabase-server"
+import { DashboardClient } from "@/app/dashboard-client"
+import type { Video } from "@/lib/types"
 
-import { useState, useEffect, useMemo } from "react"
-import { Navbar } from "@/app/components/navbar"
-import { LeftSidebar } from "@/app/components/left-sidebar"
-import { FilterBar } from "@/app/components/filter-bar"
-import { VideoGrid } from "@/app/components/video-grid"
-import { supabase } from "@/lib/supabase-client"
-import type { Video, StatusFilter, AdvancedFilters } from "@/lib/types"
-import { Button } from "@/app/components/ui/button"
-import { ArrowDownWideNarrow, ArrowUpNarrowWide } from "lucide-react"
-import { useRouter } from "next/navigation"
-
+/**
+ * 🚀 服务端全量获取视频及状态数据
+ * 彻底消除客户端的瀑布流请求和计算阻塞
+ */
 async function fetchAllVideoData() {
+  const supabase = await createClient()
+  
+  // 1. 获取当前用户
   const { data: { user } } = await supabase.auth.getUser()
-  const { data: videos, error: videosError } = await supabase
-    .from('videos')
-    .select('*, description') 
-    .order('created_at', { ascending: false })
-
-  if (videosError) return []
-
-  let favoriteIds = new Set()
-  if (user) {
-    const { data: favorites } = await supabase
-      .from('user_favorites')
-      .select('video_id')
-      .eq('user_id', user.id).not('video_id', 'is', null)
-    if (favorites) favoriteIds = new Set(favorites.map(f => f.video_id))
+  if (!user) {
+    redirect("/login")
+  }
+  
+  // 2. ✨ 核心优化：使用 Promise.all 并行拉取 3 张表的数据
+  // 这样只要花费最慢那一个请求的时间，而不是串行等待
+  const [
+    { data: videosData, error: videosError },
+    { data: learningData },
+    { data: favoritesData }
+  ] = await Promise.all([
+    supabase.from('videos')
+      .select('id, title, description, duration, difficulty, cover_url, creator, topics, accent, created_at')
+      .order('created_at', { ascending: false })
+      .limit(20), 
+    // ✨ 修复 1：在这里多加一个 progress 字段
+    supabase.from('user_learning_progress').select('video_id, status, progress').eq('user_id', user.id),
+    supabase.from('user_favorites').select('video_id').eq('user_id', user.id)
+  ])
+  if (videosError) {
+    console.error('Failed to fetch videos:', videosError)
+    return []
   }
 
-  return videos.map((v) => ({
-    ...v,
-    topics: v.topics || [],
+  // ✨ 修复 2：把整个 record 存下来，而不只是 status
+  const learningMap = new Map((learningData || []).map((record: any) => [record.video_id, record]))
+  const favoriteSet = new Set((favoritesData || []).map((fav: any) => fav.video_id))
+
+  // 4. 组装视频数据，在服务端直接把“已学习”和“已收藏”的标签打好
+  const videos: Video[] = (videosData || []).map((v: any) => ({
+    id: v.id,
+    title: v.title,
+    description: v.description || '',
+    duration: v.duration,
+    difficulty: v.difficulty,
+    video_url: v.video_url,
+    cover_url: v.cover_url,
+    creator: v.creator || 'Unknown',
+    topics: Array.isArray(v.topics) ? v.topics : [],
     accent: v.accent || 'General',
-    status: 'unlearned' as const,
-    isFavorite: favoriteIds.has(v.id),
+    created_at: v.created_at,
+    updated_at: v.updated_at,
+    // ✨ 修复 3：直接在这里把 status 和 progress 打包塞进视频数据里！
+    status: learningMap.get(v.id)?.status || 'unlearned', 
+    progress: learningMap.get(v.id)?.progress || 0,
+    isFavorite: favoriteSet.has(v.id), 
   }))
+
+  return videos
 }
 
+/**
+ * 抽离的异步组件
+ */
+async function VideoListLoader() {
+  const initialVideos = await fetchAllVideoData()
+  
+  // ✨ 删掉 filter 参数，只传视频数据
+  return <DashboardClient initialVideos={initialVideos} />
+}
+
+
+/**
+ * 首页主入口
+ */
 export default function DashboardPage() {
-  const router = useRouter()
-  const [isAuthChecking, setIsAuthChecking] = useState(true)
-  const [videos, setVideos] = useState<Video[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all")
-  const [advancedFilters, setAdvancedFilters] = useState<AdvancedFilters>({
-    difficulty: [], duration: [], creator: [], topic: [],
-  })
-  const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc")
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) router.push("/login")
-      else setIsAuthChecking(false)
-    }
-    checkAuth()
-  }, [router])
-
-  useEffect(() => {
-    if (!isAuthChecking) {
-      fetchAllVideoData().then((data) => {
-        setVideos(data)
-        setIsLoading(false)
-      })
-    }
-  }, [isAuthChecking])
-
-  const sortedVideos = useMemo(() => {
-    return [...videos].sort((a, b) => {
-      const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
-      const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
-      if (dateA === dateB) return sortOrder === "desc" ? b.title.localeCompare(a.title) : a.title.localeCompare(b.title);
-      return sortOrder === "desc" ? dateB - dateA : dateA - dateB;
-    });
-  }, [videos, sortOrder]);
-
-  if (isAuthChecking) return <div className="min-h-screen flex items-center justify-center bg-background">验证中...</div>
-
   return (
-    <div className="flex min-h-screen flex-col bg-background">
-      <Navbar 
-        activeFilter={statusFilter === "all" ? "all" : statusFilter === "learned" ? "completed" : "pending"}
-        onFilterChange={(type) => {
-          if (type === "all") setStatusFilter("all")
-          else if (type === "completed") setStatusFilter("learned")
-          else setStatusFilter("unlearned")
-        }}
-      />
-      <div className="flex flex-col lg:flex-row flex-1 gap-4 p-4 lg:p-6 max-w-[1600px] mx-auto w-full">
-        {/* 左侧边栏：>= 1024px 显示 */}
-        <LeftSidebar
-            filter={statusFilter === "all" ? "all" : statusFilter === "learned" ? "completed" : "pending"}
-            onFilterChange={(type) => {
-              if (type === "all") setStatusFilter("all")
-              else if (type === "completed") setStatusFilter("learned")
-              else setStatusFilter("unlearned")
-            }}
-          />
-        
-        <main className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <FilterBar
-            videos={videos}
-            statusFilter={statusFilter}
-            advancedFilters={advancedFilters}
-            onStatusChange={setStatusFilter}
-            onAdvancedChange={setAdvancedFilters}
-          />
-
-          <div className="flex items-center justify-between px-1 py-0.5">
-            <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">视频列表</span>
-            <Button variant="ghost" size="sm" className="h-7 gap-1.5 text-[11px]" onClick={() => setSortOrder(sortOrder === "desc" ? "asc" : "desc")}>
-              {sortOrder === "desc" ? <><ArrowDownWideNarrow className="size-3.5" /><span>最新发布</span></> : <><ArrowUpNarrowWide className="size-3.5" /><span>最早发布</span></>}
-            </Button>
-          </div>
-
-          {isLoading ? (
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="rounded-xl border border-border animate-pulse bg-card p-4">
-                  <div className="aspect-video bg-muted rounded-lg mb-3" />
-                  <div className="h-4 w-3/4 bg-muted rounded" />
-                </div>
-              ))}
-            </div>
-          ) : (
-            <VideoGrid initialVideos={sortedVideos} statusFilter={statusFilter} advancedFilters={advancedFilters} />
-          )}
-        </main>
-      </div>
-    </div>
+    <Suspense 
+      fallback={
+        <div className="flex flex-col items-center justify-center py-32 text-muted-foreground animate-pulse">
+          <div className="h-8 w-8 mb-4 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+          <p className="text-sm">正在获取最新视频列表...</p>
+        </div>
+      }
+    >
+      {/* ✨ 这里不要传参数 */}
+      <VideoListLoader /> 
+    </Suspense>
   )
 }
