@@ -72,6 +72,8 @@ export function VideoCard({ video, priority = false }: VideoCardProps) {
           className="object-cover transition-transform group-hover:scale-105"
           priority={priority}
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          // ✨ 性能终极杀招：放弃 Next.js 极慢的内置压缩，直接使用 R2 的全球边缘节点加速！
+          unoptimized
         />
         <div className="absolute bottom-2 left-2 flex items-center gap-1.5">
           <span className="rounded-md bg-black/50 px-2 py-0.5 text-[10px] text-white backdrop-blur-md">@{video.creator}</span>
