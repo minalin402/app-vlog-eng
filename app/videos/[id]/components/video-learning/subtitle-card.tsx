@@ -307,7 +307,7 @@ export const SubtitleCard = memo(function SubtitleCard({
       
       {(subtitleMode === "bilingual" || subtitleMode === "english") && (
         // ✨ 3. 压紧英文行高：从 leading-relaxed 改成了 leading-snug
-        <p className={`${fontSizeClass} font-medium text-foreground leading-relaxed`}>
+        <div className={`${fontSizeClass} font-medium text-foreground leading-relaxed`}>
           {tokens ? (
             <RenderTokenizedEnglish
               tokens={tokens} practiceMode={practiceMode} revealedTokens={revealedTokens} onToggleToken={(idx) => setRevealedTokens(p => { const n = new Set(p); n.has(idx) ? n.delete(idx) : n.add(idx); return n; })}
@@ -317,7 +317,7 @@ export const SubtitleCard = memo(function SubtitleCard({
           ) : (
             <RenderLegacyEnglish text={englishText} />
           )}
-        </p>
+        </div>
       )}
       
       {(subtitleMode === "bilingual" || subtitleMode === "chinese") && (

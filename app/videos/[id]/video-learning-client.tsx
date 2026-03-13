@@ -47,17 +47,27 @@ function Skeleton({ className }: { className?: string }) {
 }
 function PageSkeleton() {
   return (
-    <div className="h-[100dvh] flex flex-col bg-muted/40 overflow-hidden">
+    <div className="h-[100dvh] flex flex-col bg-muted/20 overflow-hidden">
       <div className="h-14 bg-card shadow-sm shrink-0" />
+      {/* 电脑端骨架 */}
       <div className="hidden md:flex flex-1 overflow-hidden p-4 gap-4">
         <div className="w-[50%] flex flex-col gap-3">
           <Skeleton className="aspect-video w-full rounded-2xl" />
           <Skeleton className="h-24 rounded-2xl" />
         </div>
         <div className="flex-1 flex flex-col gap-2">
-          <Skeleton className="h-12 rounded-xl" />
+          <Skeleton className="h-12 rounded-xl mb-4" />
           {Array.from({ length: 6 }).map((_, i) => (
             <Skeleton key={i} className="h-16 rounded-xl" />
+          ))}
+        </div>
+      </div>
+      {/* 手机端骨架 */}
+      <div className="flex md:hidden flex-1 flex-col">
+        <Skeleton className="aspect-video w-full rounded-none" />
+        <div className="p-4 flex flex-col gap-3 flex-1">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} className="h-20 rounded-xl" />
           ))}
         </div>
       </div>
@@ -85,6 +95,7 @@ const SubtitleList = memo(function SubtitleList({
   favState,
   onToggleFav,
   virtuosoRef,
+  youtubeUrl
 }: {
   subtitles: SubtitleItem[]
   subtitleMode: "bilingual" | "english" | "chinese"
@@ -101,12 +112,30 @@ const SubtitleList = memo(function SubtitleList({
   favState: Record<string, boolean>
   onToggleFav: (id: string, type: "word" | "phrase" | "expression") => void
   virtuosoRef?: React.RefObject<VirtuosoHandle | null>
+  youtubeUrl?: string
 }) {
   return (
     <Virtuoso
       ref={virtuosoRef}
       data={subtitles}
       className="hide-scrollbar"
+      style={{ height: "100%" }}
+      components={{
+        // ✨ 4. 利用内置的 Footer 将链接牢牢锁在虚拟列表最底端，绝不越界
+        Footer: () => youtubeUrl ? (
+          <div className="mt-4 mb-12 flex justify-center pb-safe">
+            <a
+              href={youtubeUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-0 px-4 py-1.5 rounded-full bg-muted/40 text-[11px] text-muted-foreground/70 hover:bg-muted hover:text-primary transition-colors active:scale-95"
+            >
+              <Youtube className="size-4 opacity-70" />
+              <span className="tracking-wider font-medium">查看 YouTube 原视频</span>
+            </a>
+          </div>
+        ) : <div className="h-12" />
+      }}
       itemContent={(index, sub) => (
         <div
           key={sub.id}
@@ -272,13 +301,19 @@ export default function VideoLearningClient({
 
 
   // === 新增：物理隔离桌面端与移动端 ===
+  // === 新增：物理隔离桌面端与移动端 ===
+  const [isMounted, setIsMounted] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
+  
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 1024)
-    checkMobile() // 首次加载执行
+    checkMobile() 
+    setIsMounted(true) // ✨ 标记已渲染，允许显示真实界面
     window.addEventListener("resize", checkMobile)
     return () => window.removeEventListener("resize", checkMobile)
   }, [])
+
+
   // ==================================
   const [showVocabPanel, setShowVocabPanel] = useState(false)
   const [showExportModal, setShowExportModal] = useState(false)
@@ -702,6 +737,9 @@ const rafCallback = useCallback(() => {
   const fontSizeClass = fontSize === "small" ? "text-xs" : fontSize === "large" ? "text-base" : "text-sm"
   const subtitles: SubtitleItem[] = videoData?.subtitles ?? []
 
+  // ✨ 在 hook 声明之后，直接拦截：在客户端准备好之前，只显示骨架屏
+  if (!isMounted) return <PageSkeleton />
+
   // ── Render ────────────────────────────────────────────────────────────
   // SSR 模式下无需 loading 状态，数据已在服务端获取
 
@@ -897,9 +935,8 @@ const rafCallback = useCallback(() => {
             </div>
           </div>
 
-          {/* 4. 可手动滑动且隐藏滚动条的字幕区 */}
-          {/* ✨ 核心修复：找回丢失的 ref 追踪器，以及用于精准计算位置的 relative */}
-          <div ref={subtitleScrollRef} className="flex-1 p-3 overflow-y-auto hide-scrollbar touch-pan-y relative">
+          {/* 4. 手机端字幕区：统一交给 Virtuoso 虚拟列表接管，彻底消除重叠和乱跑 */}
+          <div className="flex-1 p-3 overflow-hidden relative">
             <SubtitleList
               subtitles={subtitles}
               subtitleMode={subtitleMode}
@@ -915,27 +952,10 @@ const rafCallback = useCallback(() => {
               expressions={videoData?.expressions}
               favState={favState}
               onToggleFav={handleToggleFavoriteCallback}
+              virtuosoRef={virtuosoRef}
+              youtubeUrl={(videoData as any)?.original_youtube_url}
             />
-         
-
-          {/* ✨ 新增：藏在字幕列表最底部的“隐形”链接 */}
-            {(videoData as any)?.original_youtube_url && (
-              <div className="mt-6 mb-6 flex justify-center">
-                <a
-                  href={(videoData as any)?.original_youtube_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  // 1. text-muted-foreground/60: 颜色深了一倍，确保在各种背景下都能看清
-                  // 2. text-[11px]: 从 10px 微调到 11px，增加可读性
-                  className="flex items-center gap-0.5 text-[11px] text-muted-foreground/60 hover:text-primary transition-colors active:opacity-70"
-                >
-                  {/* 图标透明度也同步提升到 50%，看起来更扎实 */}
-                  <Youtube className="size-3.5 opacity-50" /> 
-                  <span className="tracking-wider">查看 YouTube 原视频</span>
-                </a>
-              </div>
-            )}
-            </div>
+          </div>
         </div>
       )}
 

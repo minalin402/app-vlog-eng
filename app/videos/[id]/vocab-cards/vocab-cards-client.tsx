@@ -1,14 +1,13 @@
 "use client"
 
-import { useState, useMemo } from "react"
-import { ChevronLeft, Volume2, Bookmark, Eye, EyeOff, Filter, Search } from "lucide-react"
+import { useState } from "react"
+import { ChevronLeft, Volume2, Bookmark, Eye, EyeOff, Filter } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { toggleFavoriteAPI } from "@/lib/favorite-api"
 import type { VocabItem, PhraseItem, ExpressionItem } from "@/lib/video-data"
 
 interface VocabCardsClientProps {
   videoId: string
-  videoTitle: string
   vocabularies: VocabItem[]
   phrases: PhraseItem[]
   expressions: ExpressionItem[]
@@ -16,21 +15,17 @@ interface VocabCardsClientProps {
 }
 
 export function VocabCardsClient({
-  videoId,
-  videoTitle,
   vocabularies,
   phrases,
   expressions,
   initialFavorites,
 }: VocabCardsClientProps) {
   const router = useRouter()
-  
-  // 状态管理
-  const [activeTab, setActiveTab] = useState<'word' | 'phrase' | 'expression'>('word')
+
+  const [activeTab, setActiveTab] = useState<"word" | "phrase" | "expression">("word")
   const [hideChinese, setHideChinese] = useState(false)
-  const [filterSaved, setFilterSaved] = useState(false)
-  const [searchQuery, setSearchQuery] = useState("")
-  
+  const [onlyFav, setOnlyFav] = useState(false)
+
   // 收藏状态（使用初始数据填充，实现本地乐观更新）
   const [favState, setFavState] = useState<Record<string, boolean>>(() => {
     const map: Record<string, boolean> = {}
@@ -38,21 +33,8 @@ export function VocabCardsClient({
     return map
   })
 
-  // 语音播报
-  const playTTS = (text: string, e?: React.MouseEvent) => {
-    if (e) e.stopPropagation()
-    if (typeof window !== "undefined" && "speechSynthesis" in window) {
-      window.speechSynthesis.cancel()
-      const utterance = new SpeechSynthesisUtterance(text)
-      utterance.lang = "en-US"
-      utterance.rate = 0.9
-      window.speechSynthesis.speak(utterance)
-    }
-  }
-
   // 切换收藏
-  const handleToggleFavorite = async (id: string, type: "word" | "phrase" | "expression", e: React.MouseEvent) => {
-    e.stopPropagation()
+  const handleToggleFavorite = async (id: string, type: "word" | "phrase" | "expression") => {
     const isFav = !!favState[id]
     const targetState = !isFav
 
@@ -64,140 +46,193 @@ export function VocabCardsClient({
     }
   }
 
-  // 过滤数据
-  const displayData = useMemo(() => {
-    let data: any[] = []
-    if (activeTab === 'word') data = vocabularies
-    else if (activeTab === 'phrase') data = phrases
-    else if (activeTab === 'expression') data = expressions
-
-    return data.filter(item => {
-      const matchSearch = (item.word || item.phrase || item.expression || '').toLowerCase().includes(searchQuery.toLowerCase())
-      const matchFav = filterSaved ? favState[item.id] : true
-      return matchSearch && matchFav
-    })
-  }, [activeTab, vocabularies, phrases, expressions, searchQuery, filterSaved, favState])
+  // 根据当前 Tab 获取列表
+  let currentList: any[] = activeTab === "word" ? vocabularies : activeTab === "phrase" ? phrases : expressions
+  // 根据收藏开关过滤
+  if (onlyFav) {
+    currentList = currentList.filter(item => favState[item.id])
+  }
 
   return (
-    <div className="flex min-h-screen flex-col bg-muted/30">
-      {/* 顶部导航 */}
-      <header className="sticky top-0 z-20 flex flex-col bg-card border-b border-border/50 shadow-sm">
-        <div className="flex items-center px-4 py-3">
-          <button onClick={() => router.back()} className="p-1 -ml-2 rounded-md hover:bg-accent transition-colors">
-            <ChevronLeft className="size-6" />
-          </button>
-          <h1 className="ml-2 text-base font-bold truncate flex-1">{videoTitle}</h1>
-        </div>
+    <div className="min-h-screen bg-muted/30 flex flex-col">
+      {/* 1. 顶部导航栏 */}
+      <header className="flex items-center px-4 py-3 border-b border-border bg-card sticky top-0 z-20 shadow-sm">
+        <button onClick={() => router.back()} className="p-1 mr-2 rounded-full hover:bg-accent" aria-label="返回">
+          <ChevronLeft className="size-5 text-foreground" />
+        </button>
+        <h1 className="text-base font-bold text-foreground flex-1 text-center mr-8">
+          英语卡片
+        </h1>
+      </header>
 
-        {/* Tab 切换 */}
-        <div className="flex px-4 gap-6 border-b border-border/50">
-          {[
-            { id: 'word', label: `单词 (${vocabularies.length})` },
-            { id: 'phrase', label: `短语 (${phrases.length})` },
-            { id: 'expression', label: `表达 (${expressions.length})` }
-          ].map(tab => (
+      {/* 2. 操作栏 (Tabs + 控制开关) */}
+      <div className="bg-card border-b border-border sticky top-[53px] z-10 px-4 py-3 flex flex-col gap-3 shadow-sm">
+        {/* Tabs */}
+        <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar">
+          {([
+            { key: "word" as const, label: `单词 (${vocabularies.length})` },
+            { key: "phrase" as const, label: `短语 (${phrases.length})` },
+            { key: "expression" as const, label: `地道表达 (${expressions.length})` },
+          ]).map((tab) => (
             <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              className={`pb-3 text-sm font-medium transition-colors relative ${
-                activeTab === tab.id ? "text-primary" : "text-muted-foreground hover:text-foreground"
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${
+                activeTab === tab.key
+                  ? "bg-[#3b82f6] text-white shadow-sm"
+                  : "bg-muted/50 text-muted-foreground hover:bg-muted"
               }`}
             >
               {tab.label}
-              {activeTab === tab.id && (
-                <span className="absolute bottom-0 left-0 w-full h-0.5 bg-primary rounded-t-full" />
-              )}
             </button>
           ))}
         </div>
 
-        {/* 工具栏 */}
-        <div className="flex flex-col sm:flex-row gap-3 px-4 py-3 bg-muted/10">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-            <input 
-              type="text" 
-              placeholder="搜索..." 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 text-sm bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-            />
+        {/* 隐藏中文 & 仅看收藏 */}
+        <div className="flex items-center justify-between mt-1">
+          <button
+            onClick={() => setHideChinese(!hideChinese)}
+            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg border transition-colors text-xs font-medium ${
+              hideChinese ? "border-[#3b82f6] text-[#3b82f6] bg-blue-50/50" : "border-border text-muted-foreground hover:bg-accent"
+            }`}
+          >
+            {hideChinese ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+            隐藏中文
+          </button>
+
+          <button
+            onClick={() => setOnlyFav(!onlyFav)}
+            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg border transition-colors text-xs font-medium ${
+              onlyFav ? "border-amber-500 text-amber-600 bg-amber-50/50" : "border-border text-muted-foreground hover:bg-accent"
+            }`}
+          >
+            <Filter className="size-3.5" />
+            仅看收藏
+          </button>
+        </div>
+      </div>
+
+      {/* 3. 瀑布流卡片列表 */}
+      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 pb-12">
+        {currentList.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 opacity-50">
+            <Bookmark className="size-12 text-muted-foreground mb-4" />
+            <p className="text-muted-foreground font-medium">
+              {onlyFav ? "该分类下暂无收藏" : "暂无数据"}
+            </p>
           </div>
-          <div className="flex gap-2 shrink-0">
-            <button
-              onClick={() => setHideChinese(!hideChinese)}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-colors border ${
-                hideChinese ? "bg-primary/10 text-primary border-primary/20" : "bg-background text-muted-foreground border-border hover:bg-accent"
-              }`}
-            >
-              {hideChinese ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-              {hideChinese ? "显中" : "遮中"}
-            </button>
-            <button
-              onClick={() => setFilterSaved(!filterSaved)}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-colors border ${
-                filterSaved ? "bg-orange-500/10 text-orange-600 border-orange-500/20" : "bg-background text-muted-foreground border-border hover:bg-accent"
-              }`}
-            >
-              <Filter className="size-4" />
-              只看收藏
+        ) : (
+          currentList.map((item: any) => {
+            if (activeTab === "word") {
+              return <WordCard key={item.id} vocab={item} hideChinese={hideChinese} isFavorited={!!favState[item.id]} onToggleFav={() => handleToggleFavorite(item.id, "word")} />
+            }
+            if (activeTab === "phrase") {
+              return <PhraseCard key={item.id} phrase={item} hideChinese={hideChinese} isFavorited={!!favState[item.id]} onToggleFav={() => handleToggleFavorite(item.id, "phrase")} />
+            }
+            if (activeTab === "expression") {
+              return <ExpressionCard key={item.id} expression={item} hideChinese={hideChinese} isFavorited={!!favState[item.id]} onToggleFav={() => handleToggleFavorite(item.id, "expression")} />
+            }
+          })
+        )}
+      </div>
+    </div>
+  )
+}
+
+// 🎙️ 发音助手
+const playTTS = (text: string, e?: React.MouseEvent) => {
+  if (e) e.stopPropagation()
+  if (typeof window !== "undefined" && "speechSynthesis" in window) {
+    window.speechSynthesis.cancel()
+    const utterance = new SpeechSynthesisUtterance(text)
+    utterance.lang = "en-US"
+    utterance.rate = 0.9
+    window.speechSynthesis.speak(utterance)
+  }
+}
+
+// ─── 卡片组件 (原汁原味还原) ─────────────────────────
+
+function WordCard({ vocab, hideChinese, isFavorited, onToggleFav }: any) {
+  return (
+    <div className="bg-card rounded-2xl p-5 shadow-sm border border-border/50">
+      <div className="flex items-start justify-between mb-1">
+        <div>
+          <h4 className="text-xl font-bold text-foreground">{vocab.word}</h4>
+          <div className="flex items-center gap-2 mt-1">
+            {vocab.phonetic && <span className="text-sm text-muted-foreground">{vocab.phonetic}</span>}
+            <button onClick={(e) => playTTS(vocab.word, e)} className="p-1 rounded-full hover:bg-accent text-[#3b82f6] transition-colors" aria-label="发音">
+              <Volume2 className="size-4" />
             </button>
           </div>
         </div>
-      </header>
-
-      {/* 卡片列表 */}
-      <main className="flex-1 p-4 overflow-y-auto">
-        {displayData.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
-            <p className="text-sm">没有找到相关的{activeTab === 'word' ? '单词' : activeTab === 'phrase' ? '短语' : '表达'}</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {displayData.map((item) => {
-              const content = item.word || item.phrase || item.expression
-              const isFav = !!favState[item.id]
-              
-              return (
-                <div key={item.id} className="bg-card rounded-2xl p-5 shadow-sm border border-border/50 flex flex-col hover:shadow-md transition-shadow">
-                  <div className="flex justify-between items-start mb-3">
-                    <div className="flex-1 pr-4">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="text-lg font-bold text-foreground">{content}</h3>
-                        {item.phonetic && <span className="text-sm text-muted-foreground font-mono">{item.phonetic}</span>}
-                        {item.pos && <span className="text-xs px-1.5 py-0.5 bg-muted rounded text-muted-foreground">{item.pos}</span>}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1 shrink-0 -mt-1 -mr-1">
-                      <button onClick={(e) => playTTS(content, e)} className="p-2 text-muted-foreground hover:text-primary transition-colors rounded-full hover:bg-primary/10">
-                        <Volume2 className="size-4.5" />
-                      </button>
-                      <button onClick={(e) => handleToggleFavorite(item.id, activeTab, e)} className={`p-2 transition-colors rounded-full ${isFav ? "text-orange-500 hover:bg-orange-500/10" : "text-muted-foreground hover:bg-accent hover:text-foreground"}`}>
-                        <Bookmark className="size-4.5" fill={isFav ? "currentColor" : "none"} />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className={`space-y-3 flex-1 ${hideChinese ? 'opacity-0 hover:opacity-100 transition-opacity duration-300' : ''}`}>
-                    <p className="text-sm text-foreground/90 font-medium">
-                      {item.chinese_definition || item.expression_explanation}
-                    </p>
-                    {item.english_definition && (
-                      <p className="text-xs text-muted-foreground leading-relaxed">{item.english_definition}</p>
-                    )}
-                    {(item.example_from_video || item.context) && (
-                      <div className="mt-4 pt-4 border-t border-border/40 bg-muted/20 -mx-5 -mb-5 p-5 rounded-b-2xl">
-                        <p className="text-sm text-foreground/80 italic mb-1.5">"{item.example_from_video || item.context}"</p>
-                        <p className="text-xs text-muted-foreground">{item.example_translation || item.context_translation}</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
+        <button onClick={onToggleFav} className={`p-1.5 rounded-lg transition-colors ${isFavorited ? "text-amber-500 bg-amber-50" : "text-muted-foreground/40 hover:bg-accent"}`}>
+          <Bookmark className="size-5" fill={isFavorited ? "currentColor" : "none"} />
+        </button>
+      </div>
+      <div className="mt-3">
+        {!hideChinese && (
+          <p className="text-base text-foreground mb-3">
+            {vocab.pos && <span className="text-muted-foreground mr-2 font-mono italic">{vocab.pos}</span>}
+            {vocab.chinese_definition}
+          </p>
         )}
-      </main>
+        {vocab.synonyms && <div className="bg-green-50 text-green-700 px-3 py-2 rounded-lg text-sm font-medium">近义: {vocab.synonyms}</div>}
+      </div>
+      <div className="bg-muted/50 rounded-xl p-3.5 mt-4 border-l-4 border-green-500">
+        <p className="text-sm text-foreground leading-relaxed">{'"'}{vocab.example_from_video}{'"'}</p>
+        {!hideChinese && <p className="text-sm text-muted-foreground mt-1.5 leading-relaxed">{'"'}{vocab.example_translation}{'"'}</p>}
+      </div>
+    </div>
+  )
+}
+
+function PhraseCard({ phrase, hideChinese, isFavorited, onToggleFav }: any) {
+  return (
+    <div className="bg-card rounded-2xl p-5 shadow-sm border border-border/50">
+      <div className="flex items-start justify-between mb-1">
+        <div>
+          <h4 className="text-xl font-bold text-foreground">{phrase.phrase}</h4>
+          <div className="flex items-center gap-2 mt-1">
+            {phrase.phonetic && <span className="text-sm text-muted-foreground">{phrase.phonetic}</span>}
+            <button onClick={(e) => playTTS(phrase.phrase, e)} className="p-1 rounded-full hover:bg-accent text-[#3b82f6] transition-colors" aria-label="发音">
+              <Volume2 className="size-4" />
+            </button>
+          </div>
+        </div>
+        <button onClick={onToggleFav} className={`p-1.5 rounded-lg transition-colors ${isFavorited ? "text-amber-500 bg-amber-50" : "text-muted-foreground/40 hover:bg-accent"}`}>
+          <Bookmark className="size-5" fill={isFavorited ? "currentColor" : "none"} />
+        </button>
+      </div>
+      <div className="mt-3">
+        {!hideChinese && <p className="text-base text-foreground mb-3">{phrase.chinese_definition}</p>}
+        {phrase.synonyms && <div className="bg-blue-50 text-blue-700 px-3 py-2 rounded-lg text-sm font-medium">近义: {phrase.synonyms}</div>}
+      </div>
+      <div className="bg-muted/50 rounded-xl p-3.5 mt-4 border-l-4 border-blue-500">
+        <p className="text-sm text-foreground leading-relaxed">{'"'}{phrase.context}{'"'}</p>
+        {!hideChinese && <p className="text-sm text-muted-foreground mt-1.5 leading-relaxed">{'"'}{phrase.context_translation}{'"'}</p>}
+      </div>
+    </div>
+  )
+}
+
+function ExpressionCard({ expression, hideChinese, isFavorited, onToggleFav }: any) {
+  return (
+    <div className="bg-card rounded-2xl p-5 shadow-sm border border-border/50">
+      <div className="flex items-start justify-between mb-4">
+        <div className="flex items-center gap-2 pr-4">
+          <h4 className="text-lg font-bold text-foreground leading-snug">{expression.expression}</h4>
+          <button onClick={(e) => playTTS(expression.expression, e)} className="p-1 rounded-full hover:bg-accent text-[#3b82f6] transition-colors shrink-0" aria-label="发音">
+            <Volume2 className="size-4" />
+          </button>
+        </div>
+        <button onClick={onToggleFav} className={`p-1.5 rounded-lg transition-colors shrink-0 ${isFavorited ? "text-amber-500 bg-amber-50" : "text-muted-foreground/40 hover:bg-accent"}`}>
+          <Bookmark className="size-5" fill={isFavorited ? "currentColor" : "none"} />
+        </button>
+      </div>
+      {!hideChinese && (
+        <div className="bg-amber-50 rounded-xl p-4 text-sm text-gray-700 leading-relaxed [&>p]:mb-3 last:[&>p]:mb-0 [&>b]:text-gray-900 [&>p>b]:text-gray-900" dangerouslySetInnerHTML={{ __html: expression.expression_explanation }} />
+      )}
     </div>
   )
 }

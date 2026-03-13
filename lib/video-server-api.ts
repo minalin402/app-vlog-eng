@@ -27,10 +27,15 @@ export interface ServerLearningStatus {
  * @returns 视频详情数据，包含字幕、词汇等
  */
 export async function getVideoDataServer(videoId: string): Promise<ServerVideoData | null> {
+  // ✨ 1. 幽灵请求拦截器：如果 ID 是 undefined 或者是静态文件后缀，直接返回，不查数据库！
+  if (!videoId || videoId === 'undefined' || videoId.includes('.')) {
+    return null
+  }
+
   const supabase = await createClient()
 
   try {
-    // ✨ 核心性能优化：利用 Promise.all 并行发起查询，打破串行阻塞
+    // ✨ 2. 性能巅峰：并行查询三大数据表（打破 10 秒瓶颈）
     const [
       { data: videoRow, error: videoError },
       { data: subData },
@@ -42,10 +47,12 @@ export async function getVideoDataServer(videoId: string): Promise<ServerVideoDa
     ])
 
     if (videoError || !videoRow) {
-      console.error('视频不存在:', videoError)
+      // ✨ 3. 优雅提示：不再打印吓人的 {} 红字报错
+      console.warn(`⚠️ 数据库未找到视频 ID: ${videoId}`)
       return null
     }
 
+    // --- 下面的代码保持你原来的逻辑完全不变 ---
     // 类型断言以避免 TypeScript 错误
     const video = videoRow as any
     const subtitles = (subData || []) as any[]
