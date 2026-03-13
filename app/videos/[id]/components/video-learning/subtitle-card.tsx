@@ -6,6 +6,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/app/components/ui/pop
 import type { SubtitleItem, ClickableWord, HighlightType, SubtitleToken, TokenType, VocabItem, PhraseItem, ExpressionItem } from "@/lib/video-data"
 import { parseSubtitleText } from "@/lib/video-data"
 import { ShadowingConsole } from "./shadowing-console"
+import { createPortal } from "react-dom"
 
 interface SubtitleCardProps {
   subtitle: SubtitleItem
@@ -209,21 +210,23 @@ function RenderTokenizedEnglish({
               </PopoverContent>
             </Popover>
             
-            {/* 📱 手机端：全屏黑色半透明遮罩的 Modal (电脑端用 hidden 自动隐藏) */}
+            {/* 📱 手机端及 iPad 竖屏：全屏黑色半透明遮罩的 Modal */}
             {openPopoverId === `${refId}-${idx}` && (
-              <div 
-                className="lg:hidden fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 p-4 animate-in fade-in duration-200"
-                onClick={(e) => { e.stopPropagation(); setOpenPopoverId(null) }}
-              >
+              <ClientPortal> {/* ✨ 魔法传送门加在这里 */}
                 <div 
-                  className="bg-card rounded-2xl shadow-2xl max-h-[85vh] overflow-y-auto animate-in zoom-in-95 duration-200" 
-                  onClick={(e) => e.stopPropagation()}
+                  className="lg:hidden fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 p-4 animate-in fade-in duration-200"
+                  onClick={(e) => { e.stopPropagation(); setOpenPopoverId(null) }}
                 >
-                  {vocab && <WordPopoverCard vocab={vocab} isFavorited={!!favState[vocab.id]} onToggleFav={() => onToggleFav(String(vocab.id), "word")} onClose={() => setOpenPopoverId(null)} />}
-                  {phrase && <PhrasePopoverCard phrase={phrase} isFavorited={!!favState[phrase.id]} onToggleFav={() => onToggleFav(String(phrase.id), "phrase")} onClose={() => setOpenPopoverId(null)} />}
-                  {expr && <ExpressionPopoverCard expression={expr} isFavorited={!!favState[expr.id]} onToggleFav={() => onToggleFav(String(expr.id), "expression")} onClose={() => setOpenPopoverId(null)} />}
+                  <div 
+                    className="bg-card rounded-2xl shadow-2xl max-h-[85vh] overflow-y-auto animate-in zoom-in-95 duration-200" 
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {vocab && <WordPopoverCard vocab={vocab} isFavorited={!!favState[vocab.id]} onToggleFav={() => onToggleFav(String(vocab.id), "word")} onClose={() => setOpenPopoverId(null)} />}
+                    {phrase && <PhrasePopoverCard phrase={phrase} isFavorited={!!favState[phrase.id]} onToggleFav={() => onToggleFav(String(phrase.id), "phrase")} onClose={() => setOpenPopoverId(null)} />}
+                    {expr && <ExpressionPopoverCard expression={expr} isFavorited={!!favState[expr.id]} onToggleFav={() => onToggleFav(String(expr.id), "expression")} onClose={() => setOpenPopoverId(null)} />}
+                  </div>
                 </div>
-              </div>
+              </ClientPortal> //{/* ✨ 魔法传送门收尾 */}
             )}
           </span>
         )
@@ -235,6 +238,7 @@ function RenderTokenizedEnglish({
 function RenderLegacyEnglish({ text }: { text: string }) {
   return <span>{text}</span>
 }
+
 
 export const SubtitleCard = memo(function SubtitleCard({
   subtitle, isActive, subtitleMode, practiceMode, fillBlankMode, onClickWord, onClickTimestamp, onPlaySegment, onPauseVideo,
@@ -358,4 +362,12 @@ function formatTimeLabel(seconds: number): string {
   const m = Math.floor(seconds / 60)
   const s = Math.floor(seconds % 60)
   return `${m}:${s.toString().padStart(2, "0")}`
+}
+
+// 🚪 迷你传送门组件：专门用于逃出 transform 囚笼
+function ClientPortal({ children }: { children: React.ReactNode }) {
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+  if (!mounted) return null
+  return createPortal(children, document.body)
 }
