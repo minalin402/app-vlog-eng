@@ -41,15 +41,16 @@ export function VideoCard({ video, onToggleFavorite, priority = false }: VideoCa
           {video.duration}
         </span>
 
-        {/* === 修改后的爱心按钮：完全内嵌，去掉白色圆底，增加阴影 === */}
+        {/* === 修复后的收藏按钮 === */}
         <button
           onClick={(e) => {
-            e.stopPropagation() 
+            e.preventDefault()   // ✨ 核心修复 1：阻止 <Link> 标签默认的页面跳转行为
+            e.stopPropagation()  // ✨ 核心修复 2：阻止点击事件继续向上级元素传递
+            
+            // 触发你原本的收藏逻辑
             onToggleFavorite(video.id, video.favorited)
           }}
-          className={`absolute top-3 right-3 z-20 p-1.5 transition-all hover:scale-110 ${
-            video.favorited ? "opacity-100" : "opacity-60 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100"
-          }`}
+          className={`absolute top-3 right-3 z-20 p-1.5 transition-all hover:scale-110 ...`}
         >
           <Heart 
             className={`h-5 w-5 drop-shadow-md transition-colors ${
