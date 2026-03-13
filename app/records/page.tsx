@@ -25,7 +25,7 @@ export default function LearningHistoryPage() {
   const [allRecords, setAllRecords] = useState<VideoCardData[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
-  // 1. 初始化拉取数据
+  // 1. 初始化拉取数据 - 使用批量查询优化性能
   useEffect(() => {
     const fetchLearningHistory = async () => {
       try {
@@ -40,48 +40,66 @@ export default function LearningHistoryPage() {
         }
 
         // 1. 获取收藏数据
-        const { data: favoritesData, error: favError } = await supabase
+        const { data: favoritesData } = await supabase
           .from('user_favorites')
           .select('video_id')
           .eq('user_id', user.id)
           .not('video_id', 'is', null)
           
-        // ✨ 关键修复：把查出来的数组转换成 Set 集合，这样第 81 行就不会报错了！
         const favoriteVideoIds = new Set(favoritesData?.map(f => f.video_id) || [])
 
-        // 2. 获取进度数据
-        const { data: progressData, error: progressError } = await supabase
+        // 2. 获取学习进度数据（只获取基础字段，不关联 videos 表）
+        const { data: progressData } = await supabase
           .from('user_learning_progress')
-          .select(`
-            progress,
-            status,
-            last_learned_at,
-            created_at,
-            video_id,
-            videos ( id, title, cover_url, duration )
-          `)
+          .select('progress, status, last_learned_at, created_at, video_id')
           .eq('user_id', user.id)
-          .order('created_at', { ascending: false }) // 改用 created_at 兜底
+          .order('last_learned_at', { ascending: false })
           .limit(20)
 
-        // 3. 修正格式化逻辑中的字段映射
-        const formattedRecords: VideoCardData[] = (progressData || [])
-          .filter(record => record.videos)
+        if (!progressData || progressData.length === 0) {
+          setAllRecords([])
+          setIsLoading(false)
+          return
+        }
+
+        // 3. 提取所有 video_id，进行批量查询（解决 N+1 问题）
+        const videoIds = progressData
+          .map(record => record.video_id)
+          .filter(Boolean) // 过滤掉 null/undefined
+
+        const { data: videosData } = await supabase
+          .from('videos')
+          .select('id, title, cover_url, duration')
+          .in('id', videoIds)
+
+        // 4. 创建视频 Map 以便快速查找
+        const videoMap = new Map(
+          (videosData || []).map(video => [video.id, video])
+        )
+
+        // 5. 组装数据 + 过滤幽灵数据（关键：防止崩溃）
+        const formattedRecords: VideoCardData[] = progressData
           .map((record: any) => {
-            const video = record.videos
+            const video = videoMap.get(record.video_id)
+            
+            // 🔥 关键修复：如果视频不存在（幽灵数据），返回 null 标记
+            if (!video) {
+              console.warn(`幽灵数据检测：video_id ${record.video_id} 在 videos 表中不存在，已过滤`)
+              return null
+            }
+
             return {
               id: video.id,
               title: video.title,
               thumbnail: video.cover_url || "/placeholder.png",
               duration: video.duration,
               progress: `${record.progress}%`,
-              // 增加对 last_learned_at 为空的处理
-              date: formatLearnDate(record.last_learned_at || record.created_at), 
-              // 匹配你数据库里的 'learned' 状态字符串
+              date: formatLearnDate(record.last_learned_at || record.created_at),
               completed: record.status === 'learned' || record.progress >= 100,
               favorited: favoriteVideoIds.has(video.id)
             }
           })
+          .filter((record): record is VideoCardData => record !== null) // 过滤掉所有 null
 
         setAllRecords(formattedRecords)
       } catch (error) {

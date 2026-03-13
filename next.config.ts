@@ -28,6 +28,10 @@ const config = {
       {
         protocol: 'https',
         hostname: 'images.unsplash.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'cdn.spoken-eng-planet.com', // 新的 CDN 域名
       }
     ],
   },

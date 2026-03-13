@@ -15,7 +15,7 @@ export interface VideoCardData {
 
 interface VideoCardProps {
   video: VideoCardData
-  onToggleFavorite: (id: string, currentStatus: boolean) => void
+  onToggleFavorite: (id: string, currentStatus: boolean) => void | Promise<void>
 }
 
 export function VideoCard({ video, onToggleFavorite }: VideoCardProps) {
