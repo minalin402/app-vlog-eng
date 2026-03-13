@@ -42,9 +42,9 @@ next-env.d.ts
 
 # 忽略本地巨大的视频和封面内容文件夹
 /public/content/
-*.mp4
-*.mov
-*.jpg
-*.jpeg
-*.png
-*.webp
+/public/content/**/*.mp4
+/public/content/**/*.mov
+/public/content/**/*.jpg
+/public/content/**/*.jpeg
+/public/content/**/*.png
+/public/content/**/*.webp
