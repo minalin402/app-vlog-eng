@@ -16,9 +16,10 @@ export interface VideoCardData {
 interface VideoCardProps {
   video: VideoCardData
   onToggleFavorite: (id: string, currentStatus: boolean) => void | Promise<void>
+  priority?: boolean // 🚀 优化3：支持图片优先加载，提升 LCP
 }
 
-export function VideoCard({ video, onToggleFavorite }: VideoCardProps) {
+export function VideoCard({ video, onToggleFavorite, priority = false }: VideoCardProps) {
   return (
     <Link
       href={`/videos/${video.id}`}
@@ -32,6 +33,7 @@ export function VideoCard({ video, onToggleFavorite }: VideoCardProps) {
           fill
           className="object-cover transition-transform duration-300 group-hover:scale-105"
           sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 25vw"
+          priority={priority}
         />
         
         {/* 时长标签 */}

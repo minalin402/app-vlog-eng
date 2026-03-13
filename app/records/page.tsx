@@ -25,7 +25,7 @@ export default function LearningHistoryPage() {
   const [allRecords, setAllRecords] = useState<VideoCardData[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
-  // 1. 初始化拉取数据 - 使用批量查询优化性能
+  // 1. 初始化拉取数据 - 使用并发请求 + 连表查询优化性能
   useEffect(() => {
     const fetchLearningHistory = async () => {
       try {
@@ -39,22 +39,34 @@ export default function LearningHistoryPage() {
           return
         }
 
-        // 1. 获取收藏数据
-        const { data: favoritesData } = await supabase
-          .from('user_favorites')
-          .select('video_id')
-          .eq('user_id', user.id)
-          .not('video_id', 'is', null)
+        // 🚀 优化1：使用 Promise.all() 并发请求，消灭瀑布流
+        const [favoritesRes, progressRes] = await Promise.all([
+          // 并发请求1：获取收藏数据
+          supabase
+            .from('user_favorites')
+            .select('video_id')
+            .eq('user_id', user.id)
+            .not('video_id', 'is', null),
           
-        const favoriteVideoIds = new Set(favoritesData?.map(f => f.video_id) || [])
+          // 并发请求2：获取学习进度数据 + 连表查询视频信息
+          // 🚀 优化2：利用外键关系，使用 Supabase 连表查询
+          supabase
+            .from('user_learning_progress')
+            .select(`
+              progress,
+              status,
+              last_learned_at,
+              created_at,
+              video_id,
+              videos (id, title, cover_url, duration)
+            `)
+            .eq('user_id', user.id)
+            .order('last_learned_at', { ascending: false })
+            .limit(20)
+        ])
 
-        // 2. 获取学习进度数据（只获取基础字段，不关联 videos 表）
-        const { data: progressData } = await supabase
-          .from('user_learning_progress')
-          .select('progress, status, last_learned_at, created_at, video_id')
-          .eq('user_id', user.id)
-          .order('last_learned_at', { ascending: false })
-          .limit(20)
+        const favoriteVideoIds = new Set(favoritesRes.data?.map(f => f.video_id) || [])
+        const progressData = progressRes.data
 
         if (!progressData || progressData.length === 0) {
           setAllRecords([])
@@ -62,25 +74,10 @@ export default function LearningHistoryPage() {
           return
         }
 
-        // 3. 提取所有 video_id，进行批量查询（解决 N+1 问题）
-        const videoIds = progressData
-          .map(record => record.video_id)
-          .filter(Boolean) // 过滤掉 null/undefined
-
-        const { data: videosData } = await supabase
-          .from('videos')
-          .select('id, title, cover_url, duration')
-          .in('id', videoIds)
-
-        // 4. 创建视频 Map 以便快速查找
-        const videoMap = new Map(
-          (videosData || []).map(video => [video.id, video])
-        )
-
-        // 5. 组装数据 + 过滤幽灵数据（关键：防止崩溃）
+        // 3. 组装数据 + 过滤幽灵数据（关键：防止崩溃）
         const formattedRecords: VideoCardData[] = progressData
           .map((record: any) => {
-            const video = videoMap.get(record.video_id)
+            const video = record.videos
             
             // 🔥 关键修复：如果视频不存在（幽灵数据），返回 null 标记
             if (!video) {
@@ -169,11 +166,12 @@ export default function LearningHistoryPage() {
           </div>
         ) : displayVideos.length > 0 ? (
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-4">
-            {displayVideos.map((video) => (
-              <VideoCard 
-                key={video.id} 
-                video={video} 
+            {displayVideos.map((video, index) => (
+              <VideoCard
+                key={video.id}
+                video={video}
                 onToggleFavorite={handleToggleFavorite}
+                priority={index < 4}
               />
             ))}
           </div>
