@@ -1,5 +1,6 @@
 "use client"
 
+import { memo } from "react"
 import { Volume2, Bookmark } from "lucide-react"
 
 // 🎙️ 独立的文本转语音助手
@@ -14,7 +15,15 @@ const playTTS = (text: string, e?: React.MouseEvent) => {
   }
 }
 
-export function WordCard({ item, hideChinese, isFavorited, onToggleFav }: { item: any; hideChinese: boolean; isFavorited: boolean; onToggleFav: () => void }) {
+interface WordCardProps {
+  item: any
+  hideChinese: boolean
+  isFavorited: boolean
+  onToggleFav: () => void
+}
+
+// 使用 React.memo 包裹组件，避免父组件更新时的无效重绘
+export const WordCard = memo(function WordCard({ item, hideChinese, isFavorited, onToggleFav }: WordCardProps) {
   const wordText = item.word || item.title
 
   return (
@@ -79,4 +88,4 @@ export function WordCard({ item, hideChinese, isFavorited, onToggleFav }: { item
       </div>
     </div>
   )
-}
+})

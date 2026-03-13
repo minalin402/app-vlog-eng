@@ -1,5 +1,6 @@
 "use client"
 
+import { memo } from "react"
 import { Bookmark, Volume2 } from "lucide-react"
 
 // 🎙️ 独立的文本转语音助手
@@ -14,7 +15,15 @@ const playTTS = (text: string, e?: React.MouseEvent) => {
   }
 }
 
-export function ExpressionCard({ item, hideChinese, isFavorited, onToggleFav }: { item: any; hideChinese: boolean; isFavorited: boolean; onToggleFav: () => void }) {
+interface ExpressionCardProps {
+  item: any
+  hideChinese: boolean
+  isFavorited: boolean
+  onToggleFav: () => void
+}
+
+// 使用 React.memo 包裹组件，避免父组件更新时的无效重绘
+export const ExpressionCard = memo(function ExpressionCard({ item, hideChinese, isFavorited, onToggleFav }: ExpressionCardProps) {
   return (
     // 将这行代码里的 p-6 替换为 p-4 md:p-6
     <div className="bg-card border border-border rounded-2xl p-4 md:p-6 shadow-sm flex flex-col h-full hover:shadow-md transition-shadow relative overflow-hidden">      {/* 顶部橙色装饰条 */}
@@ -58,4 +67,4 @@ export function ExpressionCard({ item, hideChinese, isFavorited, onToggleFav }: 
       </div>
     </div>
   )
-}
+})

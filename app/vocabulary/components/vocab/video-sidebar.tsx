@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { Search, MonitorPlay, ChevronLeft } from "lucide-react"
 import Link from "next/link"
 
@@ -13,7 +13,12 @@ interface VideoSidebarProps {
 export function VideoSidebar({ videos, activeVideoId, onSelectVideo }: VideoSidebarProps) {
   const [search, setSearch] = useState("")
 
-  const filtered = videos.filter((v) => v.title.toLowerCase().includes(search.toLowerCase()))
+  // 使用 useMemo 优化过滤逻辑，避免每次渲染都重新计算
+  const filtered = useMemo(() => {
+    if (!search) return videos
+    const searchLower = search.toLowerCase()
+    return videos.filter((v) => v.title.toLowerCase().includes(searchLower))
+  }, [videos, search])
 
   return (
     <aside className="w-64 shrink-0 border-r border-border bg-card flex flex-col h-full">
