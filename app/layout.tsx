@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "EngVlogLab - 英语视频学习平台",
+  title: "EngVlogLab - 英语视频学习星球",
   description: "通过优质英语视频内容提升听说能力",
 }
 
