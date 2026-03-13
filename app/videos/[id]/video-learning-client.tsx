@@ -37,10 +37,7 @@ const ResetDialog = dynamic(
   { ssr: false }
 )
 
-const DictionaryPopup = dynamic(
-  () => import("./components/video-learning/dictionary-modal").then((mod) => mod.DictionaryPopup),
-  { ssr: false }
-)
+
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 function Skeleton({ className }: { className?: string }) {
   return <div className={`animate-pulse bg-muted rounded-lg ${className ?? ""}`} />
@@ -985,7 +982,6 @@ const rafCallback = useCallback(() => {
         </div>
       )}
 
-      <DictionaryPopup word={selectedWord} anchorPos={wordAnchorPos} onClose={handleCloseWord} />
       
       <ExportModal
         open={showExportModal}

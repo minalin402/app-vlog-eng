@@ -255,7 +255,7 @@ def ai_extract_knowledge(text):
 # ----------------- 主流水线 -----------------
 def process_folder(folder_path, clips_csv_data):
     folder_name = os.path.basename(folder_path)
-    cf_base_url = "https://pub-a825fbb95e6e4859a99b9ec4adf6cf55.r2.dev" # 🌟 填入你专属的 Cloudflare R2 前缀 (不要带末尾的斜杠 /)
+    cf_base_url = "https://cdn.spoken-eng-planet.com" # 🌟 填入你专属的 Cloudflare R2 前缀 (不要带末尾的斜杠 /)
     # 【核心修改】：寻找以 clip_id_ 开头的文件夹进行匹配
     csv_info = None
     for cid, info in clips_csv_data.items():

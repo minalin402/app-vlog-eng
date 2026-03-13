@@ -181,18 +181,38 @@ function RenderTokenizedEnglish({
 
         return (
           <span key={idx}>
-            <button 
-              onClick={(e) => { e.stopPropagation(); setOpenPopoverId(`${refId}-${idx}`) }} 
-              className={`inline underline decoration-2 ${TOKEN_UNDERLINE[tokenType]} underline-offset-4 cursor-pointer hover:bg-accent/50 rounded-sm px-0.5 transition-colors`}
-            >
-              {token.text}
-            </button>
+            {/* ✨ 完美的双端分离：外层用 Radix Popover 负责电脑端悬浮，内层用 fixed Modal 负责手机端居中 */}
+            <Popover open={openPopoverId === `${refId}-${idx}`} onOpenChange={(open) => {
+              if (open) setOpenPopoverId(`${refId}-${idx}`)
+              else setOpenPopoverId(null)
+            }}>
+              <PopoverTrigger asChild>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); setOpenPopoverId(`${refId}-${idx}`) }} 
+                  className={`inline underline decoration-2 ${TOKEN_UNDERLINE[tokenType]} underline-offset-4 cursor-pointer hover:bg-accent/50 rounded-sm px-0.5 transition-colors`}
+                >
+                  {token.text}
+                </button>
+              </PopoverTrigger>
+
+              {/* 💻 电脑端：悬浮在单词上方的 Popover (手机端用 hidden 自动隐藏) */}
+              <PopoverContent 
+                side="top" 
+                align="center" 
+                className="hidden lg:block p-0 rounded-2xl border-border/50 shadow-xl w-auto z-[100]"
+                onClick={(e) => e.stopPropagation()}
+                onPointerDownOutside={() => setOpenPopoverId(null)}
+              >
+                {vocab && <WordPopoverCard vocab={vocab} isFavorited={!!favState[vocab.id]} onToggleFav={() => onToggleFav(String(vocab.id), "word")} onClose={() => setOpenPopoverId(null)} />}
+                {phrase && <PhrasePopoverCard phrase={phrase} isFavorited={!!favState[phrase.id]} onToggleFav={() => onToggleFav(String(phrase.id), "phrase")} onClose={() => setOpenPopoverId(null)} />}
+                {expr && <ExpressionPopoverCard expression={expr} isFavorited={!!favState[expr.id]} onToggleFav={() => onToggleFav(String(expr.id), "expression")} onClose={() => setOpenPopoverId(null)} />}
+              </PopoverContent>
+            </Popover>
             
-            {/* ✨ 核心修复 1：抛弃出画的 Popover，改用固定在屏幕正中央的 Modal。
-                不仅不会遮挡正在滚动的字幕，还不干扰底层视频播放！ */}
+            {/* 📱 手机端：全屏黑色半透明遮罩的 Modal (电脑端用 hidden 自动隐藏) */}
             {openPopoverId === `${refId}-${idx}` && (
               <div 
-                className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4 animate-in fade-in duration-200"
+                className="lg:hidden fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 p-4 animate-in fade-in duration-200"
                 onClick={(e) => { e.stopPropagation(); setOpenPopoverId(null) }}
               >
                 <div 

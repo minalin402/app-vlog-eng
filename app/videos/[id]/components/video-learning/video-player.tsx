@@ -121,7 +121,7 @@ export function VideoPlayer({
           src={videoUrl}
           className="w-full h-full object-cover relative z-0"
           playsInline
-          preload="auto"
+          preload="metadata"
           onLoadedMetadata={(e) => onDurationChange?.((e.target as HTMLVideoElement).duration)}
           onEnded={onEnded}
           onSeeked={onSeeked}
