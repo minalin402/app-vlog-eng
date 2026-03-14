@@ -299,6 +299,7 @@ export default function DynamicActivation() {
 
               <input
                 type="text"
+                inputMode="url" /* ✨ 绝招 1：强制调起英文键盘布局，大幅降低中文输入法的干扰 */
                 autoComplete="off"
                 autoCapitalize="characters"
                 autoCorrect="off"
@@ -306,11 +307,13 @@ export default function DynamicActivation() {
                 placeholder="请输入激活码"
                 value={activationCode}
                 onChange={(e) => {
-                  setActivationCode(e.target.value.toUpperCase())
+                  /* ✨ 绝招 2：删掉 .toUpperCase()，原封不动地保存用户的输入，不打断输入法 */
+                  setActivationCode(e.target.value)
                   if (verifyError) setVerifyError(null)
                 }}
                 onKeyDown={(e) => e.key === 'Enter' && handleVerifyClick()}
-                className={`w-full px-4 py-3.5 rounded-xl border-2 bg-slate-50 text-slate-800 placeholder:text-slate-300 text-sm focus:outline-none transition-colors ${
+                /* ✨ 绝招 3：在 className 最前面加上 uppercase，利用 CSS 让小写字母看起来是大写的 */
+                className={`uppercase w-full px-4 py-3.5 rounded-xl border-2 bg-slate-50 text-slate-800 placeholder:text-slate-300 text-sm focus:outline-none transition-colors ${
                   verifyError
                     ? 'border-red-400 focus:border-red-400'
                     : 'border-slate-200 focus:border-indigo-400'
