@@ -75,31 +75,32 @@ export function SidebarCalendar() {
         </CardTitle>
       </CardHeader>
 
-      <CardContent className="px-2 pt-0 pb-3 w-full -mt-2">
+      <CardContent className="px-4 pt-0 pb-3 w-full -mt-2">
         <div className="w-full overflow-hidden [&_.rdp]:w-full [&_table]:w-full [&_th]:w-[14.28%] [&_td]:w-[14.28%] [&_td]:p-0 [&_th]:p-0">
           <Calendar
-            mode="single"
+            /* ✨ 修复 1：删除了 mode="single"，防止点击产生黑色的 selected 状态 */
             month={currentMonth}
             onMonthChange={setCurrentMonth}
             className="w-full p-0" 
 
             modifiers={{
-              learned: learnedDates,
-              todayNotLearned: (date) => isSameDay(date, new Date()) && !learnedDates.some((d) => isSameDay(d, date)),
+              /* ✨ 修复 2：分离“今天”和“已学”的逻辑，确保今天优先级最高 */
+              todayHighlight: (date) => isSameDay(date, new Date()),
+              learnedHighlight: (date) => learnedDates.some((d) => isSameDay(d, date)) && !isSameDay(date, new Date()),
             }}
             modifiersClassNames={{
-              // 绿色的已学圆圈
-              learned: "bg-green-100 text-green-600 font-bold hover:bg-green-200",
-              // 蓝色的今日圆圈
-              todayNotLearned: "bg-blue-500 text-white font-bold shadow-sm hover:bg-blue-600",
+              // 蓝色的今日圆圈（优先级最高）
+              todayHighlight: "bg-blue-500 text-white font-bold shadow-sm hover:bg-blue-600 focus:bg-blue-500",
+              // 绿色的已学圆圈（排除了今天）
+              learnedHighlight: "bg-green-100 text-green-600 font-bold hover:bg-green-200 focus:bg-green-100",
             }}
             classNames={{
-              // 彻底清除原本的丑陋灰色背景
-              day_today: "", 
-              // 核心修复：用 h-8 w-8 固定尺寸，加上 rounded-full 强制变成完美的正圆形
-              day: "mx-auto flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground",
+              day_today: "", // 彻底清除 shadcn 默认的 today 样式
+              day_selected: "", // 彻底清除 shadcn 默认的 selected 样式
+              /* ✨ 修复 1：在 day 类名中加入 focus:outline-none focus:ring-0，彻底扼杀点击黑框 */
+              day: "mx-auto flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:outline-none focus:ring-0",
             }}
-          />  
+          /> 
         </div>
       </CardContent>
     </Card>

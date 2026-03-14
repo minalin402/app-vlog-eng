@@ -150,7 +150,7 @@ export function MobilePlaybackBar({
 
       {/* Speed sheet */}
       {activeSheet === "speed" && (
-        <div className="fixed left-0 right-0 bottom-0 z-40 md:hidden bg-card rounded-t-2xl shadow-xl pb-6 safe-area-bottom">
+        <div className="fixed left-0 right-0 bottom-0 z-40 bg-card rounded-t-2xl shadow-xl pb-6 safe-area-bottom">
           <div className="flex justify-center pt-2 pb-1">
             <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
           </div>
@@ -173,7 +173,7 @@ export function MobilePlaybackBar({
 
       {/* Loop sheet */}
       {activeSheet === "loop" && (
-        <div className="fixed left-0 right-0 bottom-0 z-40 md:hidden bg-card rounded-t-2xl shadow-xl pb-6 safe-area-bottom">
+        <div className="fixed left-0 right-0 bottom-0 z-40 bg-card rounded-t-2xl shadow-xl pb-6 safe-area-bottom">
           <div className="flex justify-center pt-2 pb-1">
             <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
           </div>
@@ -264,7 +264,7 @@ export function MobilePlaybackBar({
 
       {/* Practice sheet */}
       {activeSheet === "practice" && (
-        <div className="fixed left-0 right-0 bottom-0 z-40 md:hidden bg-card rounded-t-2xl shadow-xl pb-6 safe-area-bottom">
+        <div className="fixed left-0 right-0 bottom-0 z-40 bg-card rounded-t-2xl shadow-xl pb-6 safe-area-bottom">
           <div className="flex justify-center pt-2 pb-1">
             <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
           </div>

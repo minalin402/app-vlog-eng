@@ -92,7 +92,8 @@ const SubtitleList = memo(function SubtitleList({
   favState,
   onToggleFav,
   virtuosoRef,
-  youtubeUrl
+  youtubeUrl,
+  activeSubtitleId // ✨ 接收传进来的高亮 ID
 }: {
   subtitles: SubtitleItem[]
   subtitleMode: "bilingual" | "english" | "chinese"
@@ -110,6 +111,7 @@ const SubtitleList = memo(function SubtitleList({
   onToggleFav: (id: string, type: "word" | "phrase" | "expression") => void
   virtuosoRef?: React.RefObject<VirtuosoHandle | null>
   youtubeUrl?: string
+  activeSubtitleId: string | number | null 
 }) {
   return (
     <Virtuoso
@@ -117,46 +119,54 @@ const SubtitleList = memo(function SubtitleList({
       data={subtitles}
       className="hide-scrollbar"
       style={{ height: "100%" }}
+      
+      // ✨ 核心修复 2：打破 Virtuoso 的缓存机制！
+      // 必须将所有会频繁改变的外部状态放进 context，列表才知道什么时候该刷新
+      context={{ activeSubtitleId, subtitleMode, practiceMode, fontSizeClass, favState }}
+      
       components={{
-        // ✨ 4. 利用内置的 Footer 将链接牢牢锁在虚拟列表最底端，绝不越界
+        // 加入超大底部留白，确保即使是最后一句，也能被无障碍地推到屏幕的最顶端第一行！
         Footer: () => youtubeUrl ? (
-          <div className="mt-4 mb-12 flex justify-center pb-safe">
-            <a
-              href={youtubeUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-0 px-4 py-1.5 rounded-full bg-muted/40 text-[11px] text-muted-foreground/70 hover:bg-muted hover:text-primary transition-colors active:scale-95"
-            >
+          <div className="mt-4 mb-[60vh] flex justify-center pb-safe">
+            <a href={youtubeUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-0 px-4 py-1.5 rounded-full bg-muted/40 text-[11px] text-muted-foreground/70 hover:bg-muted hover:text-primary transition-colors active:scale-95">
               <Youtube className="size-4 opacity-70" />
               <span className="tracking-wider font-medium">查看 YouTube 原视频</span>
             </a>
           </div>
-        ) : <div className="h-12" />
+        ) : <div className="h-[60vh]" />
       }}
-      itemContent={(index, sub) => (
+      
+      // ✨ 注意这里的第三个参数变成了 context
+      itemContent={(index, sub, context) => (
         <div
           key={sub.id}
-          className="subtitle-line mb-4"
+          // ✨ 使用 context 里的数据来判断高亮
+          className={`subtitle-line mb-4 transition-colors duration-300 ${context.activeSubtitleId === sub.id ? 'is-subtitle-active' : ''}`}
           data-start={sub.startTime}
           data-end={sub.endTime}
           data-id={sub.id}
         >
           <SubtitleCard
             subtitle={sub}
-            isActive={false}
-            subtitleMode={subtitleMode}
-            practiceMode={practiceMode}
-            fillBlankMode={practiceMode === "fill"}
+            // ✨ 核心修复 1：动态判断是否激活，取代之前的 false
+            isActive={context.activeSubtitleId === sub.id}
+            
+            // ✨ 其他所有依赖状态的属性，都要改成从 context 读取
+            subtitleMode={context.subtitleMode}
+            practiceMode={context.practiceMode}
+            fillBlankMode={context.practiceMode === "fill"}
+            fontSizeClass={context.fontSizeClass}
+            favState={context.favState}
+            
+            // 下面这些是不变的函数或静态数据，直接用闭包里的就行
             onClickWord={onClickWord}
             onClickTimestamp={onClickTimestamp}
             onPlaySegment={onPlaySegment}
             onPauseVideo={onPauseVideo}
-            fontSizeClass={fontSizeClass}
             videoId={videoId}
             vocabularies={vocabularies}
             phrases={phrases}
             expressions={expressions}
-            favState={favState}
             onToggleFav={onToggleFav}
           />
         </div>
@@ -185,7 +195,8 @@ export default function VideoLearningClient({
   const [videoData] = useState<VideoDetail>(initialVideoData)
   const [learningStatus, setLearningStatus] = useState<LearningStatus>(initialLearningStatus)
   const [showResetButton, setShowResetButton] = useState(initialLearningStatus === "learned")
-  
+  const [activeSubtitleId, setActiveSubtitleId] = useState<string | number | null>(null)
+
   // ── 防抖进度更新：每10秒最多触发一次 ──────────────────────────
   const debouncedUpdateProgress = useMemo(() => {
     let timeoutId: NodeJS.Timeout | null = null
@@ -438,47 +449,24 @@ const rafCallback = useCallback(() => {
     const activeId = activeSub?.id ?? null
 
 // Gate: only touch DOM when the active sentence actually changes
-      if (activeId !== lastHighlightedIdRef.current) {
-        lastHighlightedIdRef.current = activeId
+    if (activeId !== lastHighlightedIdRef.current) {
+      lastHighlightedIdRef.current = activeId
+      // ✨ 通知 React 更新高亮状态
+      setActiveSubtitleId(activeId)
 
-        // Raw DOM sweep — zero React involvement
-        const rows = document.querySelectorAll<HTMLElement>(".subtitle-line")
-        let activeEl: HTMLElement | null = null
-        let activeIndex = -1
-
-        rows.forEach((row, idx) => {
-          const isActive = activeSub !== null && row.dataset.id === String(activeSub.id)
-          if (isActive) {
-            row.classList.add("is-subtitle-active")
-            activeEl = row
-            activeIndex = idx
-          } else {
-            row.classList.remove("is-subtitle-active")
-          }
-        })
-
-        // ✨ 自动滚动对齐：桌面端使用 Virtuoso，移动端使用原生滚动
-        if (activeIndex >= 0) {
-          // 桌面端：使用 Virtuoso 的 scrollToIndex
-          if (virtuosoRef.current) {
-            virtuosoRef.current.scrollToIndex({
-              index: activeIndex,
-              align: "start",
-              behavior: "smooth"
-            })
-          }
-          // 移动端：使用原生滚动
-          else if (activeEl && subtitleScrollRef.current) {
-            subtitleScrollRef.current.scrollTo({
-              top: (activeEl as HTMLElement).offsetTop - 12,
-              behavior: "smooth"
-            })
-          }
+      // 智能滚动到第一行（包含平滑上推）
+      if (activeId !== null) {
+        const activeIndex = subs.findIndex(s => s.id === activeId)
+        if (activeIndex >= 0 && virtuosoRef.current) {
+          virtuosoRef.current.scrollToIndex({
+            index: activeIndex,
+            align: "start", // ✨ 结合 footer 留白，绝对推到屏幕正顶端
+            behavior: "smooth"
+          })
         }
-
-        // Reset loop counter when switching to a new sentence
-        currentLoopCountRef.current = 0
       }
+      currentLoopCountRef.current = 0
+    }
 
     // ── 3. 逻辑跳转拦截 (修复引擎假死) ──────────────────────────────────
     if (isSeekingRef.current) {
@@ -565,6 +553,7 @@ const rafCallback = useCallback(() => {
       // 而是要强制清空所有的“高亮记忆”和“循环锁”，让它宛如新生
       shadowingEndTimeRef.current = null
       lastHighlightedIdRef.current = null
+      setActiveSubtitleId(null) // ✨ 加这一行，清理 React 的高亮缓存，让第一句宛若初见！
       currentLoopCountRef.current = 0
       isSeekingRef.current = false
       if (seekTimeoutRef.current) clearTimeout(seekTimeoutRef.current)
@@ -597,6 +586,7 @@ const rafCallback = useCallback(() => {
     
     // 修复：强制清空上次的高亮记录，确保即便点击正在播放的这句，也能触发滚动和重绘
     lastHighlightedIdRef.current = null
+    setActiveSubtitleId(null) // ✨ 加这一行，清理 React 的高亮缓存，让第一句宛若初见！
     currentLoopCountRef.current = 0
     
     // 修复：强行解除所有锁定状态，防止与循环逻辑打架
@@ -615,6 +605,7 @@ const rafCallback = useCallback(() => {
 
     // === 核心修复：和点击字幕一样，强制解除所有锁定状态和高亮缓存 ===
     lastHighlightedIdRef.current = null
+    setActiveSubtitleId(null) // ✨ 加这一行，清理 React 的高亮缓存，让第一句宛若初见！
     currentLoopCountRef.current = 0
     isSeekingRef.current = false
     if (seekTimeoutRef.current) clearTimeout(seekTimeoutRef.current)
@@ -670,12 +661,10 @@ const rafCallback = useCallback(() => {
     const video = videoRef.current
     if (video) video.currentTime = 0
     lastHighlightedIdRef.current = null
+    setActiveSubtitleId(null) // ✨ 加这一行，清理 React 的高亮缓存，让第一句宛若初见！
     currentLoopCountRef.current = 0
     isSeekingRef.current = false
-    // Clear all DOM highlights immediately
-    document.querySelectorAll<HTMLElement>(".subtitle-line").forEach((row) => {
-      row.classList.remove("is-subtitle-active")
-    })
+
     setIsPlaying(false)
     setPracticeMode("none")
     setMobileVideoMode("full")
@@ -823,6 +812,7 @@ const rafCallback = useCallback(() => {
                   favState={favState}
                   onToggleFav={handleToggleFavoriteCallback}
                   virtuosoRef={virtuosoRef}
+                  activeSubtitleId={activeSubtitleId} // ✨ 新增这一行传参
                 />
               </div>
             </div>
@@ -951,6 +941,7 @@ const rafCallback = useCallback(() => {
               onToggleFav={handleToggleFavoriteCallback}
               virtuosoRef={virtuosoRef}
               youtubeUrl={(videoData as any)?.original_youtube_url}
+              activeSubtitleId={activeSubtitleId} // ✨ 新增这一行传参
             />
           </div>
         </div>

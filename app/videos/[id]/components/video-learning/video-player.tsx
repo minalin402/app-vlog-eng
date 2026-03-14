@@ -43,13 +43,14 @@ export function VideoPlayer({
   const [showSpeedMenu, setShowSpeedMenu] = useState(false)
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-  // 手机端点击屏幕唤起/隐藏控制栏
+ // 手机端点击屏幕唤起/隐藏控制栏 + ✨ 点击视频直接播放/暂停
   const handleScreenClick = () => {
     if (showSpeedMenu) {
       setShowSpeedMenu(false)
       return
     }
-    setShowControls(prev => !prev)
+    // ✨ 新增：点按直接触发播放暂停，体验拉平 YouTube
+    onPlayPause()
   }
 
   // 每次显示控制栏时，如果是播放状态，3秒后自动隐藏
