@@ -1,7 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
-import { VideoSidebar } from "./video-sidebar"
+import { useState, useMemo, useRef, useEffect } from "react" // ✨ 增加 useRef 和 useEffectimport { VideoSidebar } from "./video-sidebar"
 import { TabNav, type TabType } from "./tab-nav"
 import { FilterBar, type FilterType } from "./filter-bar"
 import { WordCard } from "./word-card"
@@ -11,6 +10,7 @@ import { Loader2, ChevronDown, ChevronLeft, MonitorPlay } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { toggleFavoriteAPI } from "@/lib/favorite-api"
 import type { VocabularyItemRow } from "@/lib/supabase-client"
+import { VideoSidebar } from "./video-sidebar" // ✨ 就是这行丢了！把它加回来
 
 interface Video {
   id: string
@@ -34,11 +34,35 @@ export function VocabPage({
   const [activeTab, setActiveTab] = useState<TabType>("words")
   const [activeFilter, setActiveFilter] = useState<FilterType | string>("all")
   const [hideChinese, setHideChinese] = useState(false)
-  const [favState, setFavState] = useState<Record<string, boolean>>(() => {
+  const [favState, setFavState] = useState<Record<string, boolean>>(() => { 
     const initial: Record<string, boolean> = {}
     initialFavoriteIds.forEach(id => { initial[id] = true })
     return initial
   })
+
+  // ✨ 核心修复：建立状态镜像，永远记录当前这一毫秒的最新收藏状态
+  const favStateRef = useRef(favState)
+  useEffect(() => {
+    favStateRef.current = favState
+  }, [favState])
+
+  // ✨ 修复 1：监听服务端传入的最新数据，并立刻覆盖本地的收藏状态
+  useEffect(() => {
+    const freshState: Record<string, boolean> = {}
+    initialFavoriteIds.forEach(id => { freshState[id] = true })
+    setFavState(freshState)
+  }, [initialFavoriteIds])
+
+  // ✨ 修复 2：每次回到该页面（挂载或屏幕重新获得焦点），触发 Next.js 后台静默刷新
+  useEffect(() => {
+    // 触发 Next.js 静默重新执行服务端的 page.tsx，获取最新数据
+    router.refresh()
+    
+    // 额外加固：防止手机端从其他 App 切回浏览器时数据旧了
+    const handleFocus = () => router.refresh()
+    window.addEventListener('focus', handleFocus)
+    return () => window.removeEventListener('focus', handleFocus)
+  }, [router])
 
   // 使用 useMemo 基于 activeVideoId 过滤当前视频的词汇数据
   const currentVideoData = useMemo(() => {
@@ -99,15 +123,23 @@ export function VocabPage({
     }
   }, [currentVideoData, activeFilter, favState])
 
-  // 收藏切换逻辑
-  const handleToggleFavorite = async (id: string, type: "word"|"phrase"|"expression") => {
-    const isFav = !!favState[id]
-    const targetState = !isFav
+  // 收藏切换逻辑（防弹版）
+  const handleToggleFavorite = async (rawId: string | number, type: "word"|"phrase"|"expression") => {
+    const id = String(rawId)
+    // ✨ 直接从镜像中读取绝对真实的最新状态，彻底绕过闭包陷阱
+    const originalState = !!favStateRef.current[id]
+    const targetState = !originalState
+    
+    // 1. 瞬间乐观更新 UI
     setFavState(prev => ({ ...prev, [id]: targetState })) 
+    
+    // 2. 将正确的指令发送给后端
     try {
       await toggleFavoriteAPI(id, type, targetState) 
     } catch (error) {
-      setFavState(prev => ({ ...prev, [id]: isFav })) 
+      console.error("收藏同步失败，已回滚", error)
+      // 3. 如果网络失败，精准回滚到原来的状态
+      setFavState(prev => ({ ...prev, [id]: originalState })) 
     }
   }
 

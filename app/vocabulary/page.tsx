@@ -20,16 +20,20 @@ export default async function Page() {
     .select('*')
     .order('created_at', { ascending: false })
   
-  // 3. 使用连表查询一次性获取用户的所有收藏（避免 .in() 防爆）
+  // 3. 使用连表查询一次性获取用户的所有收藏
   let favoriteIds: string[] = []
   if (user) {
     const { data: favorites } = await supabase
       .from('user_favorites')
-      .select('item_id')
+      // ✨ 核心修复 1：严格对齐你的数据库列名 vocabulary_id
+      .select('vocabulary_id')
       .eq('user_id', user.id)
+      // ✨ 核心修复 2：过滤掉只收藏了视频（vocabulary_id 为 null）的无用记录
+      .not('vocabulary_id', 'is', null)
     
     if (favorites) {
-      favoriteIds = favorites.map((f: any) => f.item_id)
+      // ✨ 核心修复 3：正确提取 vocabulary_id
+      favoriteIds = favorites.map((f: any) => f.vocabulary_id).filter(Boolean)
     }
   }
   
