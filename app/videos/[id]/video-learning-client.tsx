@@ -20,6 +20,7 @@ import { MobilePlaybackBar } from "./components/video-learning/mobile-playback-b
 import { Clapperboard, X, Youtube } from "lucide-react"
 import { fetchUserFavorites, toggleFavoriteAPI } from "@/lib/favorite-api"
 import { Group as PanelGroup, Panel, Separator as PanelResizeHandle } from "react-resizable-panels"
+import { useRouter } from "next/navigation"
 
 // 动态加载弹窗和面板组件，优化首屏加载性能
 const VocabPanel = dynamic(
@@ -93,7 +94,7 @@ const SubtitleList = memo(function SubtitleList({
   onToggleFav,
   virtuosoRef,
   youtubeUrl,
-  activeSubtitleId // ✨ 接收传进来的高亮 ID
+  activeSubtitleId
 }: {
   subtitles: SubtitleItem[]
   subtitleMode: "bilingual" | "english" | "chinese"
@@ -113,19 +114,54 @@ const SubtitleList = memo(function SubtitleList({
   youtubeUrl?: string
   activeSubtitleId: string | number | null 
 }) {
+  // ✨ 核心修复 1：使用 useMemo 缓存 context，确保引用稳定
+  const listContext = useMemo(() => ({
+    activeSubtitleId, subtitleMode, practiceMode, fontSizeClass, favState
+  }), [activeSubtitleId, subtitleMode, practiceMode, fontSizeClass, favState])
+
+  // ✨ 核心修复 2：使用 useCallback 缓存渲染函数！
+  // 这样 Virtuoso 就会乖乖在原地更新样式，绝不会再把你的 DOM 连根拔起！
+  const renderItem = useCallback((index: number, sub: SubtitleItem, context: any) => (
+    <div
+      key={sub.id}
+      className={`subtitle-line mb-4 transition-colors duration-300 ${context.activeSubtitleId === sub.id ? 'is-subtitle-active' : ''}`}
+      data-start={sub.startTime}
+      data-end={sub.endTime}
+      data-id={sub.id}
+    >
+      <SubtitleCard
+        subtitle={sub}
+        isActive={context.activeSubtitleId === sub.id}
+        subtitleMode={context.subtitleMode}
+        practiceMode={context.practiceMode}
+        fillBlankMode={context.practiceMode === "fill"}
+        fontSizeClass={context.fontSizeClass}
+        favState={context.favState}
+        
+        onClickWord={onClickWord}
+        onClickTimestamp={onClickTimestamp}
+        onPlaySegment={onPlaySegment}
+        onPauseVideo={onPauseVideo}
+        videoId={videoId}
+        vocabularies={vocabularies}
+        phrases={phrases}
+        expressions={expressions}
+        onToggleFav={onToggleFav}
+      />
+    </div>
+  ), [
+    onClickWord, onClickTimestamp, onPlaySegment, onPauseVideo,
+    videoId, vocabularies, phrases, expressions, onToggleFav
+  ])
+
   return (
     <Virtuoso
       ref={virtuosoRef}
       data={subtitles}
       className="hide-scrollbar"
       style={{ height: "100%" }}
-      
-      // ✨ 核心修复 2：打破 Virtuoso 的缓存机制！
-      // 必须将所有会频繁改变的外部状态放进 context，列表才知道什么时候该刷新
-      context={{ activeSubtitleId, subtitleMode, practiceMode, fontSizeClass, favState }}
-      
+      context={listContext}
       components={{
-        // 加入超大底部留白，确保即使是最后一句，也能被无障碍地推到屏幕的最顶端第一行！
         Footer: () => youtubeUrl ? (
           <div className="mt-4 mb-[60vh] flex justify-center pb-safe">
             <a href={youtubeUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-0 px-4 py-1.5 rounded-full bg-muted/40 text-[11px] text-muted-foreground/70 hover:bg-muted hover:text-primary transition-colors active:scale-95">
@@ -135,42 +171,7 @@ const SubtitleList = memo(function SubtitleList({
           </div>
         ) : <div className="h-[60vh]" />
       }}
-      
-      // ✨ 注意这里的第三个参数变成了 context
-      itemContent={(index, sub, context) => (
-        <div
-          key={sub.id}
-          // ✨ 使用 context 里的数据来判断高亮
-          className={`subtitle-line mb-4 transition-colors duration-300 ${context.activeSubtitleId === sub.id ? 'is-subtitle-active' : ''}`}
-          data-start={sub.startTime}
-          data-end={sub.endTime}
-          data-id={sub.id}
-        >
-          <SubtitleCard
-            subtitle={sub}
-            // ✨ 核心修复 1：动态判断是否激活，取代之前的 false
-            isActive={context.activeSubtitleId === sub.id}
-            
-            // ✨ 其他所有依赖状态的属性，都要改成从 context 读取
-            subtitleMode={context.subtitleMode}
-            practiceMode={context.practiceMode}
-            fillBlankMode={context.practiceMode === "fill"}
-            fontSizeClass={context.fontSizeClass}
-            favState={context.favState}
-            
-            // 下面这些是不变的函数或静态数据，直接用闭包里的就行
-            onClickWord={onClickWord}
-            onClickTimestamp={onClickTimestamp}
-            onPlaySegment={onPlaySegment}
-            onPauseVideo={onPauseVideo}
-            videoId={videoId}
-            vocabularies={vocabularies}
-            phrases={phrases}
-            expressions={expressions}
-            onToggleFav={onToggleFav}
-          />
-        </div>
-      )}
+      itemContent={renderItem} // ✨ 传入缓存好的神级渲染函数
     />
   )
 })
@@ -189,6 +190,8 @@ export default function VideoLearningClient({
   initialLearningStatus,
   initialFavoriteIds,
 }: VideoLearningClientProps) {
+  const router = useRouter()
+
   // ── Data state (从 props 初始化，无需 loading) ──────────────────────────
   const lastSaveTimeRef = useRef(0)
   const lastSavedProgressRef = useRef(0)
@@ -222,6 +225,28 @@ export default function VideoLearningClient({
   useEffect(() => {
     favStateRef.current = favState
   }, [favState])
+
+  // ==========================================
+  // 👇 请将以下两段代码粘贴到这里 👇
+  // ==========================================
+
+  // ✨ 同步修复 1：当 Next.js 后台拉取到新数据时，立刻同步给当前视频页的字幕和面板
+  useEffect(() => {
+    const freshState: Record<string, boolean> = {}
+    initialFavoriteIds.forEach(id => { freshState[id] = true })
+    setFavState(freshState)
+  }, [initialFavoriteIds])
+
+  // ✨ 同步修复 2：每次从卡片页“返回”到视频页时，强制触发 Next.js 后台静默更新
+  useEffect(() => {
+    // 只要组件挂载（比如从其他页面返回），就去服务端拉一次最新数据
+    router.refresh()
+    
+    // 额外加固：防止手机锁屏再切回来时数据旧了
+    const handleFocus = () => router.refresh()
+    window.addEventListener('focus', handleFocus)
+    return () => window.removeEventListener('focus', handleFocus)
+  }, [router])
 
   // ── Video element ref ─────────────────────────────────────────────────
   const videoRef = useRef<HTMLVideoElement>(null)
