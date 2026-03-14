@@ -122,6 +122,11 @@ function LoginForm() {
             <input
               id="phone"
               type="tel"
+              inputMode="numeric"
+              autoComplete="username"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               onFocus={() => setFocusedField('phone')}
@@ -143,6 +148,10 @@ function LoginForm() {
             <input
               id="password"
               type="password"
+              autoComplete="current-password"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               onFocus={() => setFocusedField('password')}

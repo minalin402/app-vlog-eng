@@ -299,6 +299,10 @@ export default function DynamicActivation() {
 
               <input
                 type="text"
+                autoComplete="off"
+                autoCapitalize="characters"
+                autoCorrect="off"
+                spellCheck={false}
                 placeholder="请输入激活码"
                 value={activationCode}
                 onChange={(e) => {
@@ -342,6 +346,11 @@ export default function DynamicActivation() {
                 </label>
                 <input
                   type="tel"
+                  inputMode="numeric"
+                  autoComplete="username"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
                   placeholder="请输入11位手机号"
                   value={phone}
                   onChange={(e) => {
@@ -367,6 +376,10 @@ export default function DynamicActivation() {
                 </label>
                 <input
                   type="password"
+                  autoComplete="new-password"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
                   placeholder="至少6个字符"
                   value={password}
                   onChange={(e) => {
@@ -392,6 +405,10 @@ export default function DynamicActivation() {
                 </label>
                 <input
                   type="password"
+                  autoComplete="new-password"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
                   placeholder="再次输入密码"
                   value={confirmPassword}
                   onChange={(e) => {
