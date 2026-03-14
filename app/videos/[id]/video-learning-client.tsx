@@ -217,6 +217,12 @@ export default function VideoLearningClient({
     return initialFavs
   })
 
+  // ✨ 核心修复：建立状态镜像
+  const favStateRef = useRef(favState)
+  useEffect(() => {
+    favStateRef.current = favState
+  }, [favState])
+
   // ── Video element ref ─────────────────────────────────────────────────
   const videoRef = useRef<HTMLVideoElement>(null)
   const seekTimeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -627,22 +633,22 @@ const rafCallback = useCallback(() => {
       return next
     })
   }, [])
-  const handleToggleFavorite = async (id: string, type: "word" | "phrase" | "expression") => {
-    const isFav = !!favState[id]
-    const targetState = !isFav
+  const handleToggleFavorite = async (rawId: string | number, type: "word" | "phrase" | "expression") => {
+    const id = String(rawId)
+    
+    // ✨ 从镜像中同步读取最新状态
+    const originalState = !!favStateRef.current[id]
+    const targetState = !originalState
 
-    // 1. 乐观更新 UI，瞬间点亮/熄灭爱心
-    setFavState((prev) => ({ ...prev, [id]: targetState }))
+    setFavState(prev => ({ ...prev, [id]: targetState }))
 
-    // 2. 发送请求给后端
     try {
       await toggleFavoriteAPI(id, type, targetState)
     } catch (error) {
       console.error("收藏同步失败，回滚状态", error)
-      setFavState((prev) => ({ ...prev, [id]: isFav })) // 回滚
+      setFavState(prev => ({ ...prev, [id]: originalState })) 
     }
   }
-
 
   const handleReset = useCallback(() => {
     // 调用后端API重置学习状态

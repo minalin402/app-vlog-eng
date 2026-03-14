@@ -1,10 +1,10 @@
 "use client"
 
-import { useState } from "react"
 import { ChevronLeft, Volume2, Bookmark, Eye, EyeOff, Filter } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { toggleFavoriteAPI } from "@/lib/favorite-api"
 import type { VocabItem, PhraseItem, ExpressionItem } from "@/lib/video-data"
+import { useState, useRef, useEffect } from "react"
 
 interface VocabCardsClientProps {
   videoId: string
@@ -26,23 +26,37 @@ export function VocabCardsClient({
   const [hideChinese, setHideChinese] = useState(false)
   const [onlyFav, setOnlyFav] = useState(false)
 
-  // 收藏状态（使用初始数据填充，实现本地乐观更新）
+  // 收藏状态
   const [favState, setFavState] = useState<Record<string, boolean>>(() => {
     const map: Record<string, boolean> = {}
     initialFavorites.forEach(id => { map[id] = true })
     return map
   })
 
-  // 切换收藏
-  const handleToggleFavorite = async (id: string, type: "word" | "phrase" | "expression") => {
-    const isFav = !!favState[id]
-    const targetState = !isFav
+  // ✨ 核心修复：建立状态镜像！它永远与最新状态同步，且不受任何闭包限制
+  const favStateRef = useRef(favState)
+  useEffect(() => {
+    favStateRef.current = favState
+  }, [favState])
 
-    setFavState(prev => ({ ...prev, [id]: targetState })) // 乐观更新UI
+  // 切换收藏（防弹版）
+  const handleToggleFavorite = async (rawId: string | number, type: "word" | "phrase" | "expression") => {
+    const id = String(rawId)
+    
+    // ✨ 直接从镜像中读取当下这一毫秒绝对真实的最新状态！
+    const originalState = !!favStateRef.current[id]
+    const targetState = !originalState
+
+    // 1. 瞬间乐观更新 UI，让用户立刻看到效果
+    setFavState(prev => ({ ...prev, [id]: targetState }))
+
+    // 2. 发送正确的指令给后端
     try {
       await toggleFavoriteAPI(id, type, targetState)
     } catch (error) {
-      setFavState(prev => ({ ...prev, [id]: isFav })) // 失败回滚
+      console.error("收藏同步失败，已回滚", error)
+      // 3. 如果失败，精准回滚到刚才拿到的真实状态
+      setFavState(prev => ({ ...prev, [id]: originalState })) 
     }
   }
 
