@@ -230,23 +230,43 @@ export default function VideoLearningClient({
   // 👇 请将以下两段代码粘贴到这里 👇
   // ==========================================
 
-  // ✨ 同步修复 1：当 Next.js 后台拉取到新数据时，立刻同步给当前视频页的字幕和面板
-  useEffect(() => {
-    const freshState: Record<string, boolean> = {}
-    initialFavoriteIds.forEach(id => { freshState[id] = true })
-    setFavState(freshState)
-  }, [initialFavoriteIds])
+// ==========================================
+  // 👇 将这里的旧逻辑替换为全新的客户端静默同步逻辑 👇
+  // ==========================================
 
-  // ✨ 同步修复 2：每次从卡片页“返回”到视频页时，强制触发 Next.js 后台静默更新
   useEffect(() => {
-    // 只要组件挂载（比如从其他页面返回），就去服务端拉一次最新数据
-    router.refresh()
-    
-    // 额外加固：防止手机锁屏再切回来时数据旧了
-    const handleFocus = () => router.refresh()
-    window.addEventListener('focus', handleFocus)
-    return () => window.removeEventListener('focus', handleFocus)
-  }, [router])
+    // 定义一个专属的同步函数，只拉取收藏数据，不刷新整个页面
+    const syncFavorites = async () => {
+      try {
+        // 直接调用你在顶部引入的 fetchUserFavorites 接口
+        const latestFavs = await fetchUserFavorites(videoId) // ✨ 加上 videoId 参数
+        
+        // 如果成功拿到数据，立刻更新当前页面的状态
+        if (Array.isArray(latestFavs)) {
+          const freshState: Record<string, boolean> = {}
+          latestFavs.forEach((id: string) => { freshState[id] = true })
+          setFavState(freshState)
+        }
+      } catch (error) {
+        console.error("静默同步收藏状态失败", error)
+      }
+    }
+
+    // 1. 监听窗口获得焦点（比如从卡片页返回、或者手机切后台再切回来）
+    window.addEventListener('focus', syncFavorites)
+    // 2. 监听路由弹栈（拦截所有的返回操作）
+    window.addEventListener('popstate', syncFavorites)
+
+    // 组件挂载时主动触发一次兜底
+    syncFavorites()
+
+    return () => {
+      window.removeEventListener('focus', syncFavorites)
+      window.removeEventListener('popstate', syncFavorites)
+    }
+  }, [])
+  
+  // ==========================================
 
   // ── Video element ref ─────────────────────────────────────────────────
   const videoRef = useRef<HTMLVideoElement>(null)
