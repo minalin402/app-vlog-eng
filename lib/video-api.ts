@@ -7,6 +7,7 @@ export interface VideoDetail {
   duration: string;
   difficulty: string;
   videoUrl: string;
+  coverUrl?: string;            // ✨ 新增：告诉 TS 我们有封面图
   original_youtube_url?: string;
   subtitles: SubtitleItem[];
   vocabularies?: VocabItem[];

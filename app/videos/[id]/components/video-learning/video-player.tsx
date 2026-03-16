@@ -6,6 +6,7 @@ import { Play, Pause, Volume2, VolumeX, Maximize } from "lucide-react"
 interface VideoPlayerProps {
   videoRef?: React.RefObject<HTMLVideoElement | null>
   videoUrl?: string
+  poster?: string;  // ✨ 新增：允许接收外部传来的封面图
   isPlaying: boolean
   duration: number
   playbackSpeed?: number
@@ -23,6 +24,7 @@ interface VideoPlayerProps {
 export function VideoPlayer({
   videoRef: externalRef,
   videoUrl,
+  poster,
   isPlaying,
   duration,
   playbackSpeed = 1,
@@ -120,6 +122,7 @@ export function VideoPlayer({
         <video
           ref={videoRef}
           src={videoUrl}
+          poster={poster} // ✨ 绑定封面图
           className="w-full h-full object-cover relative z-0"
           playsInline
           preload="metadata"

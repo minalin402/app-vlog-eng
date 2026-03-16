@@ -132,6 +132,7 @@ export async function getVideoDataServer(videoId: string): Promise<ServerVideoDa
       duration: video.duration,
       difficulty: video.difficulty,
       videoUrl: localVideoUrl || video.video_url,
+      coverUrl: video.cover_url || '',  // ✨ 新增：把数据库查到的 cover_url 传出去
       original_youtube_url: cleanYoutubeUrl,
       subtitles: formattedSubtitles,
       vocabularies,
