@@ -257,53 +257,14 @@ export const SubtitleCard = memo(function SubtitleCard({
   const chineseText = subtitle.zh ?? subtitle.chinese ?? ""
   const timeLabel = subtitle.timeLabel ?? formatTimeLabel(subtitle.startTime)
 
-  // ✨ 核心的高亮扫描雷达在这里
+// ✨ 极简的前端解析器：所有脏活累活已由服务端的跨行引擎完成
   const tokens = useMemo(() => {
     if (!englishText) return null
-
     if (englishText.includes("{{")) return parseSubtitleText(englishText)
-
-    if (!vocabularies?.length && !phrases?.length && !expressions?.length) return null
-
-    const targets: { text: string; id: string; type: TokenType }[] = []
-    vocabularies.forEach(v => { if (v.word) targets.push({ text: v.word, id: String(v.id), type: 'w' }) })
-    phrases.forEach(p => { if (p.phrase) targets.push({ text: p.phrase, id: String(p.id), type: 'p' }) })
-    expressions.forEach(e => { if (e.expression) targets.push({ text: e.expression, id: String(e.id), type: 'e' }) })
-
-    if (targets.length === 0) return null
-
-    // 按词长倒序排列，优先标亮长短语
-    targets.sort((a, b) => b.text.length - a.text.length)
-
-    let resultTokens: SubtitleToken[] = [{ text: englishText, isHighlight: false }]
-
-    targets.forEach(target => {
-      const escapedText = target.text.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')
-      const regex = new RegExp(`\\b(${escapedText})\\b`, 'gi')
-      const nextTokens: SubtitleToken[] = []
-
-      resultTokens.forEach(token => {
-        if (token.isHighlight) {
-          nextTokens.push(token)
-        } else {
-          const parts = token.text.split(regex)
-          parts.forEach(part => {
-            if (!part) return
-            if (part.toLowerCase() === target.text.toLowerCase()) {
-              nextTokens.push({ text: part, isHighlight: true, type: target.type, refId: target.id })
-            } else {
-              nextTokens.push({ text: part, isHighlight: false })
-            }
-          })
-        }
-      })
-      resultTokens = nextTokens
-    })
-
-    if (resultTokens.length === 1 && !resultTokens[0].isHighlight) return null
-
-    return resultTokens
-  }, [englishText, vocabularies, phrases, expressions])
+    
+    // 如果没有埋入任何标签，当做普通文本返回
+    return [{ text: englishText, isHighlight: false }]
+  }, [englishText])
 
   const handlePlaybackClick = (e: React.MouseEvent<HTMLElement>) => {
     e.stopPropagation()

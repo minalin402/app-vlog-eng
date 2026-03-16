@@ -48,3 +48,10 @@ next-env.d.ts
 /public/content/**/*.jpeg
 /public/content/**/*.png
 /public/content/**/*.webp
+
+#物料脚本们
+/materials_produce_deepseek copy.py
+
+/materials_produce_deepseek.py
+
+/generate_sql.py

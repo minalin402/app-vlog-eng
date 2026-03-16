@@ -49,7 +49,7 @@ def optimize_videos_for_web():
             "ffmpeg", 
             "-i", backup_path, 
             "-vcodec", "libx264", 
-            "-crf", "28", 
+            "-crf", "23", 
             "-vf", "scale=-2:720", 
             "-preset", "veryfast", 
             "-c:a", "aac", 

@@ -33,7 +33,7 @@ async function seedDatabase() {
     }
 
     // 暂时只处理这两个文件夹进行验证
-    const folders = ['A001_Tyson_Liberto', 'A002_Tyson_Liberto', 'A004_jenn_im']
+    const folders = ['A001_Tyson_Liberto', 'A002_Tyson_Liberto', 'A004_jenn_im','A005_jenn_im','A006_jenn_im','A007_emma_chamberlain','A008_emma_chamberlain','A009_emma_chamberlain']
     console.log(`📂 在本地找到 ${folders.length} 个指定的视频文件夹，准备开始同步...`)
 
     for (const folder of folders) {
@@ -95,6 +95,7 @@ async function seedDatabase() {
           video_id: mockData.id,
           type: 'word',
           content: v.word || '',
+          original_form_in_video: v.original_form_in_video || '', // ✨ 必须加这一行
           pos: v.pos || '',  
           phonetic: v.phonetic || '',
           definition_zh: v.chinese_definition || '',
@@ -109,6 +110,7 @@ async function seedDatabase() {
           video_id: mockData.id,
           type: 'phrase',
           content: p.phrase || '',
+          original_form_in_video: p.original_form_in_video || '', // ✨ 必须加这一行
           phonetic: p.phonetic || '',
           definition_zh: p.chinese_definition || '',
           synonyms: p.synonyms || '',
@@ -122,6 +124,7 @@ async function seedDatabase() {
           video_id: mockData.id,
           type: 'expression',
           content: e.expression || '',
+          original_form_in_video: e.original_form_in_video || '', // ✨ 从 e.original_form_in_video 获取
           definition_zh: '',
           analysis: e.expression_explanation || '',
           first_appearance_time: e.first_appearance_time || 0,

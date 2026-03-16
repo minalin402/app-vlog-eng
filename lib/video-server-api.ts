@@ -85,6 +85,7 @@ export async function getVideoDataServer(videoId: string): Promise<ServerVideoDa
       .map(v => ({
         id: v.id,
         word: v.content,
+        original_form_in_video: v.original_form_in_video || undefined, // 🚨 补上映射！
         pos: v.pos,
         phonetic: v.phonetic,
         synonyms: v.synonyms,
@@ -101,6 +102,7 @@ export async function getVideoDataServer(videoId: string): Promise<ServerVideoDa
       .map(v => ({
         id: v.id,
         phrase: v.content,
+        original_form_in_video: v.original_form_in_video || undefined, // 🚨 补上映射！
         phonetic: v.phonetic,
         synonyms: v.synonyms,
         chinese_definition: v.definition_zh,
@@ -115,11 +117,15 @@ export async function getVideoDataServer(videoId: string): Promise<ServerVideoDa
       .map(v => ({
         id: v.id,
         expression: v.content,
+        original_form_in_video: v.original_form_in_video || undefined, // 🚨 补上映射！
         expression_explanation: v.analysis,
         first_appearance_time: v.first_appearance_time,
       }))
 
-    return {
+// ==========================================
+    // ✨ 1. 先把准备返回的对象存进变量 resultData
+    // ==========================================
+    const resultData = {
       id: video.id,
       title: video.title,
       description: video.description,
@@ -132,6 +138,84 @@ export async function getVideoDataServer(videoId: string): Promise<ServerVideoDa
       phrases,
       expressions,
     }
+
+    // ==========================================
+    // ✨ 2. 终极跨行高亮引擎：在服务端预渲染全部高亮标签
+    // ==========================================
+    const targets = [
+      ...resultData.vocabularies.map(v => ({ text: (v.original_form_in_video || v.word).trim(), id: v.id, type: 'w' as const })),
+      ...resultData.phrases.map(p => ({ text: (p.original_form_in_video || p.phrase).trim(), id: p.id, type: 'p' as const })),
+      ...resultData.expressions.map(e => ({ text: (e.original_form_in_video || e.expression).trim(), id: e.id, type: 'e' as const }))
+    ].filter(t => t.text.length > 0);
+
+    // 按长度倒序，长词/长句优先高亮，防止被短词截断
+    targets.sort((a, b) => b.text.length - a.text.length);
+
+    const charsMap: { char: string; subIdx: number; localIdx: number; openTag?: string; closeTag?: string; }[] = [];
+
+    resultData.subtitles.forEach((sub, subIdx) => {
+      const text = sub.en || "";
+      for (let i = 0; i < text.length; i++) {
+        charsMap.push({ char: text[i], subIdx, localIdx: i });
+      }
+      charsMap.push({ char: ' ', subIdx, localIdx: -1 });
+    });
+
+    const globalString = charsMap.map(c => c.char).join('');
+    const highlighted = new Array(globalString.length).fill(false);
+
+    targets.forEach(target => {
+      const escaped = target.text.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+      const regex = new RegExp(`(${escaped})`, 'gi');
+      
+      let match;
+      while ((match = regex.exec(globalString)) !== null) {
+        const start = match.index;
+        const end = start + match[0].length;
+        
+        const prevChar = start > 0 ? globalString[start - 1] : "";
+        const nextChar = end < globalString.length ? globalString[end] : "";
+        const startsWithWordChar = /^\w/.test(match[0]);
+        const endsWithWordChar = /\w$/.test(match[0]);
+        const validStart = startsWithWordChar ? !prevChar || /\W/.test(prevChar) : true;
+        const validEnd = endsWithWordChar ? !nextChar || /\W/.test(nextChar) : true;
+        
+        if (!validStart || !validEnd) continue;
+
+        let isOverlap = false;
+        for (let i = start; i < end; i++) {
+          if (highlighted[i]) { isOverlap = true; break; }
+        }
+        if (isOverlap) continue;
+
+        for (let i = start; i < end; i++) {
+          highlighted[i] = true;
+          if (charsMap[i].localIdx === -1) continue;
+
+          if (i === start || charsMap[i - 1].localIdx === -1) {
+            charsMap[i].openTag = `{{${target.type}|${target.id}|`;
+          }
+          if (i === end - 1 || charsMap[i + 1].localIdx === -1) {
+            charsMap[i].closeTag = `}}`;
+          }
+        }
+      }
+    });
+
+    resultData.subtitles.forEach((sub, subIdx) => {
+      let newEn = "";
+      const subChars = charsMap.filter(c => c.subIdx === subIdx && c.localIdx !== -1);
+      for (const c of subChars) {
+        if (c.openTag) newEn += c.openTag;
+        newEn += c.char;
+        if (c.closeTag) newEn += c.closeTag;
+      }
+      if (newEn.includes("{{")) sub.en = newEn;
+    });
+
+    // ✨ 3. 带着完美高亮标签返回数据！
+    return resultData
+
   } catch (error) {
     console.error('获取视频数据失败:', error)
     return null
