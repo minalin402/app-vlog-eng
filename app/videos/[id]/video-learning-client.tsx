@@ -163,13 +163,17 @@ const SubtitleList = memo(function SubtitleList({
       context={listContext}
       components={{
         Footer: () => youtubeUrl ? (
-          <div className="mt-4 mb-[60vh] flex justify-center pb-safe">
+          // ✨ 修复：将 mb-[60vh] 改成了正常的 mb-8
+          <div className="mt-4 mb-8 flex justify-center pb-safe">
             <a href={youtubeUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-0 px-4 py-1.5 rounded-full bg-muted/40 text-[11px] text-muted-foreground/70 hover:bg-muted hover:text-primary transition-colors active:scale-95">
               <Youtube className="size-4 opacity-70" />
               <span className="tracking-wider font-medium">查看 YouTube 原视频</span>
             </a>
           </div>
-        ) : <div className="h-[60vh]" />
+        ) : (
+          // ✨ 修复：将 h-[60vh] 改成一个小占位，比如 h-8
+          <div className="h-8" />
+        )
       }}
       itemContent={renderItem} // ✨ 传入缓存好的神级渲染函数
     />
