@@ -125,7 +125,7 @@ export function VideoPlayer({
           poster={poster} // ✨ 绑定封面图
           className="w-full h-full object-cover relative z-0"
           playsInline
-          preload="metadata"
+          preload="auto"
           onLoadedMetadata={(e) => onDurationChange?.((e.target as HTMLVideoElement).duration)}
           onEnded={onEnded}
           onSeeked={onSeeked}
