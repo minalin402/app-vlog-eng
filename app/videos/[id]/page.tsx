@@ -16,6 +16,7 @@ import { notFound } from 'next/navigation'
 import { getVideoPageData } from '@/lib/video-server-api'
 import VideoLearningClient from './video-learning-client'
 import type { LearningStatus } from '@/lib/learning-status-api'
+import { createClient } from '@/lib/supabase-server'
 
 interface PageProps {
   params: Promise<{ id: string }>
@@ -44,21 +45,17 @@ export default async function VideoPage({ params }: PageProps) {
   )
 }
 
-/**
- * 生成静态参数（可选）
- * 如果你想在构建时预渲染某些视频页面，可以实现这个函数
- */
-// export async function generateStaticParams() {
-//   const supabase = await createClient()
-//   const { data: videos } = await supabase
-//     .from('videos')
-//     .select('id')
-//     .limit(10) // 只预渲染前 10 个视频
-//   
-//   return videos?.map((video) => ({
-//     id: video.id,
-//   })) || []
-// }
+// 🚨 修复 2：为 generateStaticParams 增加严格类型支持
+//export async function generateStaticParams() {
+//  const supabase = await createClient()
+//  const { data: videos } = await supabase
+//    .from('videos')
+//    .select('id')
+  
+//  return (videos || []).map((video: { id: string }) => ({
+//    id: video.id,
+//  }))
+//}
 
 /**
  * 元数据生成（可选）

@@ -16,7 +16,11 @@ import { VideoPlayer } from "./components/video-learning/video-player"
 import { VideoDescription } from "./components/video-learning/video-description"
 import { SubtitleToolbar } from "./components/video-learning/subtitle-toolbar"
 import { SubtitleCard } from "./components/video-learning/subtitle-card"
-import { MobilePlaybackBar } from "./components/video-learning/mobile-playback-bar"
+//import { MobilePlaybackBar } from "./components/video-learning/mobile-playback-bar"
+const MobilePlaybackBar = dynamic(
+  () => import("./components/video-learning/mobile-playback-bar").then((mod) => mod.MobilePlaybackBar),
+  { ssr: false }
+)
 import { Clapperboard, X, Youtube } from "lucide-react"
 import { fetchUserFavorites, toggleFavoriteAPI } from "@/lib/favorite-api"
 import { Group as PanelGroup, Panel, Separator as PanelResizeHandle } from "react-resizable-panels"
