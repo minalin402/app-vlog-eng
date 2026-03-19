@@ -186,6 +186,9 @@ interface VideoLearningClientProps {
   initialVideoData: VideoDetail & { original_youtube_url: string }
   initialLearningStatus: LearningStatus
   initialFavoriteIds: string[]
+  prevVideoId?: string | null  // ✨ 新增
+  nextVideoId?: string | null  // ✨ 新增
+  currentSort?: string         // ✨ 新增
 }
 
 export default function VideoLearningClient({
@@ -193,6 +196,9 @@ export default function VideoLearningClient({
   initialVideoData,
   initialLearningStatus,
   initialFavoriteIds,
+  prevVideoId,   // ✨ 接收
+  nextVideoId,   // ✨ 接收
+  currentSort,   // ✨ 接收
 }: VideoLearningClientProps) {
   const router = useRouter()
 
@@ -786,11 +792,17 @@ const rafCallback = useCallback(() => {
 
   return (
     <div className="h-[100dvh] flex flex-col bg-muted/40 overflow-hidden">
-      <VideoHeader video={videoData} />
+      <VideoHeader 
+        video={videoData} 
+        prevVideoId={prevVideoId} 
+        nextVideoId={nextVideoId}
+        currentSort={currentSort} // ✨ 传递给 Header
+      />
 
       {/* ===== DESKTOP (仅在电脑端渲染，彻底消灭冲突) ===== */}
       {!isMobile && (
-        <PanelGroup orientation="horizontal" className="flex-1">
+        // ✨ 核心修复：加上 key={videoId}。一旦视频切换，强制销毁重建面板，彻底解决内部状态崩溃！
+        <PanelGroup key={videoId} orientation="horizontal" className="flex-1" id="video-layout-group">
           {/* Left Panel: Video + Description */}
           <Panel
             defaultSize={showVocabPanel ? 40 : 50}

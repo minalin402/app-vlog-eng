@@ -36,6 +36,7 @@ export interface SubtitleItem {
 export interface VocabItem {
   id: string
   word: string
+  original_form_in_video?: string;
   phonetic?: string
   pos?: string
   chinese_definition: string
@@ -49,6 +50,7 @@ export interface VocabItem {
 export interface PhraseItem {
   id: string
   phrase: string
+  original_form_in_video?: string;
   phonetic?: string
   chinese_definition: string
   synonyms?: string
@@ -60,6 +62,7 @@ export interface PhraseItem {
 export interface ExpressionItem {
   id: string
   expression: string
+  original_form_in_video?: string  // ✨ 新增这一行
   expression_explanation: string
   first_appearance_time: number
 }

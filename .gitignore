@@ -40,6 +40,15 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+
+
+#物料脚本们
+/materials_produce_deepseek copy.py
+
+/materials_produce_deepseek.py
+
+/generate_sql.py
+
 # 忽略本地巨大的视频和封面内容文件夹
 /public/content/
 /public/content/**/*.mp4
@@ -48,10 +57,3 @@ next-env.d.ts
 /public/content/**/*.jpeg
 /public/content/**/*.png
 /public/content/**/*.webp
-
-#物料脚本们
-/materials_produce_deepseek copy.py
-
-/materials_produce_deepseek.py
-
-/generate_sql.py

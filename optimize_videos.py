@@ -5,11 +5,17 @@ import subprocess
 CONTENT_DIR = "public/content"
 
 # ✨ 在这里写死你想测试的几个文件夹名字（记得带引号和逗号）
-TARGET_FOLDERS = [
-    "A001_Tyson_Liberto",
-    "A002_Tyson_Liberto",
-    "A004_jenn_im",
-    "A005_jenn_im"
+TARGET_FOLDERS =  [
+    "A045_jenn_im", "A053_Claudia_Sulewski", "A071_Amanda_Ekstrand", "A072_Amanda_Ekstrand", "A042_michelle_Choi", 
+    "A019_Birta_Hlin", "A022_Birta_Hlin", "A025_Birta_Hlin", "A034_Sydney_Serena", "A041_michelle_Choi", 
+    "A128_Life_Of_Riza", "A007_emma_chamberlain", "A009_emma_chamberlain", "A008_emma_chamberlain", "A005_jenn_im", 
+    "A004_jenn_im", "A003_michelle_Choi", "A148_Taylor_R", "A149_Taylor_R", "A151_Taylor_R", 
+    "A156_Eve_Bennett", "A163_Lydia_Violeta", "A095_Karen_Napoly", "A096_Karen_Napoly", "A098_Karen_Napoly", 
+    "A099_Karen_Napoly", "A102_Karen_Napoly", "A104_Noa_Maria", "A105_Noa_Maria", "A109_Noa_Maria", 
+    "A136_sarah_pan", "A129_Life_Of_Riza", "A049_jenn_im", "A043_emma_chamberlain", "A044_emma_chamberlain", 
+    "A047_jenn_im", "A048_jenn_im", "A030_Annika", "A027_Annika", "A026_Annika", 
+    "A002_Tyson_Liberto", "A050_jenn_im", "A051_jenn_im", "A052_jenn_im", "A059_Hannah_Elise", 
+    "A060_Hannah_Elise", "A061_Hannah_Elise", "A063_Taylor_Bell", "A079_Allison_Anderson", "A090_Hailey_Rhode_Bieber"
 ]
 
 def optimize_videos_for_web():

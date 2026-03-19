@@ -1,78 +1,36 @@
-/**
- * 视频详情页 - Server Component
- * 
- * 重构说明：
- * - 这是一个纯 Server Component，在服务端获取所有数据
- * - 数据通过 props 传递给客户端组件 VideoLearningClient
- * - 实现 SSR，首屏即可看到完整内容，无白屏
- * 
- * 性能优势：
- * - 消除客户端 useEffect 数据获取的等待时间
- * - 利用服务端直连数据库，速度更快
- * - SEO 友好，搜索引擎可以抓取完整内容
- */
-
-import { notFound } from 'next/navigation'
-import { getVideoPageData } from '@/lib/video-server-api'
-import VideoLearningClient from './video-learning-client'
-import type { LearningStatus } from '@/lib/learning-status-api'
-import { createClient } from '@/lib/supabase-server'
+import { notFound } from "next/navigation"
+import VideoLearningClient from "./video-learning-client"
+import { getVideoPageData } from "@/lib/video-server-api"
 
 interface PageProps {
   params: Promise<{ id: string }>
+  searchParams: Promise<{ sort?: string }> // ✨ 捕获 URL 里的 sort 参数
 }
 
-export default async function VideoPage({ params }: PageProps) {
-  // 在服务端获取路由参数
+export default async function VideoPage({ params, searchParams }: PageProps) {
   const { id: videoId } = await params
+  
+  // ✨ 解析 sort 参数，如果没有传，就默认降序 'desc'
+  const resolvedSearchParams = await searchParams
+  const currentSort = resolvedSearchParams.sort === 'asc' ? 'asc' : 'desc'
 
-  // 在服务端并行获取所有数据
-  const { videoData, learningStatus, favoriteIds } = await getVideoPageData(videoId)
+  // ✨ 将排序状态传给后端 API
+  const { videoData, learningStatus, favoriteIds, prevVideoId, nextVideoId } = 
+    await getVideoPageData(videoId, currentSort) as any
 
-  // 如果视频不存在，返回 404
   if (!videoData) {
     notFound()
   }
 
-  // 将数据传递给客户端组件
   return (
     <VideoLearningClient
       videoId={videoId}
       initialVideoData={videoData}
       initialLearningStatus={learningStatus.status}
       initialFavoriteIds={favoriteIds}
+      prevVideoId={prevVideoId}
+      nextVideoId={nextVideoId}
+      currentSort={currentSort} // ✨ 顺便传给前端客户端，让 Header 跳转时能记住这个状态
     />
   )
 }
-
-// 🚨 修复 2：为 generateStaticParams 增加严格类型支持
-//export async function generateStaticParams() {
-//  const supabase = await createClient()
-//  const { data: videos } = await supabase
-//    .from('videos')
-//    .select('id')
-  
-//  return (videos || []).map((video: { id: string }) => ({
-//    id: video.id,
-//  }))
-//}
-
-/**
- * 元数据生成（可选）
- * 为每个视频页面生成动态的 SEO 元数据
- */
-// export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-//   const { id: videoId } = await params
-//   const { videoData } = await getVideoPageData(videoId)
-//   
-//   if (!videoData) {
-//     return {
-//       title: '视频不存在',
-//     }
-//   }
-//   
-//   return {
-//     title: `${videoData.title} - EngVlogLab`,
-//     description: videoData.description || '通过优质英语视频内容提升听说能力',
-//   }
-// }

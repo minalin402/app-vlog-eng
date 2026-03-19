@@ -1,15 +1,24 @@
 "use client"
 
-// ✨ 新增导入 Star 图标
-import { ChevronLeft, Star } from "lucide-react"
+import { ChevronLeft, ChevronRight, Star } from "lucide-react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { VideoDetail } from "@/lib/video-api"
 
 interface VideoHeaderProps {
   video?: VideoDetail | null;
+  prevVideoId?: string | null;
+  nextVideoId?: string | null;
+  currentSort?: string; // ✨ 新增
 }
 
-export function VideoHeader({ video }: VideoHeaderProps) {
+// 2. 在组件括号里把它解构出来（顺便给个默认值 'desc'）
+export function VideoHeader({ 
+  video, 
+  prevVideoId, 
+  nextVideoId, 
+  currentSort = 'desc' // ✨ 新增这个参数
+}: VideoHeaderProps) {
   const router = useRouter()
   return (
     <header className="flex items-center justify-between px-4 py-3 bg-card shadow-sm shrink-0 z-20">
@@ -26,13 +35,11 @@ export function VideoHeader({ video }: VideoHeaderProps) {
         </h1>
       </div>
       
-      <div className="flex items-center gap-4 shrink-0">
-        {/* ✨ 渲染真实时长 */}
+      <div className="flex items-center gap-3 md:gap-4 shrink-0">
         <span className="hidden md:flex items-center text-sm text-muted-foreground">
           时长: <span className="ml-1 font-medium text-foreground">{video?.duration || '--:--'}</span>
         </span>
         
-        {/* ✨ 渲染真实难度，并转化为星星图标 */}
         <span className="hidden md:flex items-center text-sm text-muted-foreground">
           难度: 
           <div className="flex items-center gap-0.5 ml-1.5">
@@ -52,6 +59,38 @@ export function VideoHeader({ video }: VideoHeaderProps) {
             )}
           </div>
         </span>
+
+        {/* ✨ 极简胶囊版：上一期 / 下一期 */}
+        <div className="flex items-center border border-border/80 rounded-lg overflow-hidden shadow-sm bg-background ml-1">
+          {prevVideoId ? (
+            <Link 
+            prefetch={true} // ✨ 核心提速：开启后台强制预加载
+            href={`/videos/${prevVideoId}?sort=${currentSort}`}
+            className="px-2.5 py-1.5 hover:bg-muted text-muted-foreground hover:text-primary transition-all duration-100 active:scale-90 active:bg-muted-foreground/20 flex items-center justify-center border-r border-border/80" title="上一期">
+              <ChevronLeft className="size-4" />
+            </Link>
+          ) : (
+            <div className="px-2.5 py-1.5 text-muted-foreground/30 flex items-center justify-center cursor-not-allowed" title="已经是第一期">
+              <ChevronLeft className="size-4" />
+            </div>
+          )}
+          
+          <div className="w-[1px] h-3.5 bg-border/80" />
+          
+          {nextVideoId ? (
+            <Link 
+              prefetch={true} // ✨ 核心提速：开启后台强制预加载
+              href={`/videos/${nextVideoId}?sort=${currentSort}`}
+              className="px-2.5 py-1.5 hover:bg-muted text-muted-foreground hover:text-primary transition-all duration-100 active:scale-90 active:bg-muted-foreground/20 flex items-center justify-center" title="下一期">
+              <ChevronRight className="size-4" />
+            </Link>
+          ) : (
+            <div className="px-2.5 py-1.5 text-muted-foreground/30 flex items-center justify-center cursor-not-allowed" title="已经是最新一期">
+              <ChevronRight className="size-4" />
+            </div>
+          )}
+        </div>
+
       </div>
     </header>
   )

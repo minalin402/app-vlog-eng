@@ -26,7 +26,8 @@ const [
   ] = await Promise.all([
     supabase.from('videos')
       .select('id, title, description, duration, difficulty, cover_url, creator, topics, accent, created_at')
-      .order('created_at', { ascending: false }), // ✨ 删除了 .limit(20)，一次性拿全
+      .order('created_at', { ascending: false }) // ✨ 删除了 .limit(20)，一次性拿全
+      .order('id', { ascending: false }), // ✨ 核心修复：加这一行！当时间相同时，按 ID 排序（打破平局）
     supabase.from('user_learning_progress').select('video_id, status, progress').eq('user_id', user.id),
     supabase.from('user_favorites').select('video_id').eq('user_id', user.id)
   ])

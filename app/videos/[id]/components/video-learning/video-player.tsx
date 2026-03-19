@@ -6,7 +6,7 @@ import { Play, Pause, Volume2, VolumeX, Maximize } from "lucide-react"
 interface VideoPlayerProps {
   videoRef?: React.RefObject<HTMLVideoElement | null>
   videoUrl?: string
-  poster?: string;  // ✨ 新增：允许接收外部传来的封面图
+  poster?: string
   isPlaying: boolean
   duration: number
   playbackSpeed?: number
@@ -43,37 +43,48 @@ export function VideoPlayer({
 
   const [showControls, setShowControls] = useState(true)
   const [showSpeedMenu, setShowSpeedMenu] = useState(false)
+  const [showVolumeSlider, setShowVolumeSlider] = useState(false)
+  
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  
+  // ✨ 音量状态，0 到 1 之间
+  const [volume, setVolume] = useState(1)
 
- // 手机端点击屏幕唤起/隐藏控制栏 + ✨ 点击视频直接播放/暂停
   const handleScreenClick = () => {
     if (showSpeedMenu) {
       setShowSpeedMenu(false)
       return
     }
-    // ✨ 新增：点按直接触发播放暂停，体验拉平 YouTube
+    if (showVolumeSlider) {
+      setShowVolumeSlider(false)
+      return
+    }
     onPlayPause()
   }
 
-  // 每次显示控制栏时，如果是播放状态，3秒后自动隐藏
   useEffect(() => {
-    if (showControls && isPlaying && !showSpeedMenu) { 
+    if (showControls && isPlaying && !showSpeedMenu && !showVolumeSlider) { 
       if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current)
       controlsTimeoutRef.current = setTimeout(() => {
         setShowControls(false)
+        setShowVolumeSlider(false) 
       }, 3000)
     }
     return () => {
-      if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current)
+      if (controlsTimeoutRef.current) controlsTimeoutRef.current && clearTimeout(controlsTimeoutRef.current)
     }
-  }, [showControls, isPlaying, showSpeedMenu])
+  }, [showControls, isPlaying, showSpeedMenu, showVolumeSlider])
 
-  // 暂停时强制显示控制栏
   useEffect(() => {
     if (!isPlaying) setShowControls(true)
   }, [isPlaying])
 
-  // Direct DOM refs for progress bar
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.volume = muted ? 0 : volume
+    }
+  }, [volume, muted, videoRef])
+
   const progressBarRef  = useRef<HTMLDivElement>(null)
   const progressThumbRef = useRef<HTMLDivElement>(null)
   const timeDisplayRef  = useRef<HTMLSpanElement>(null)
@@ -106,14 +117,12 @@ export function VideoPlayer({
 
     video.addEventListener("timeupdate", handleUpdate, { passive: true })
     return () => video.removeEventListener("timeupdate", handleUpdate)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []) 
+  }, [videoRef]) 
 
   return (
     <div className="relative w-full group/video rounded-lg overflow-hidden">
       <div className="relative aspect-video bg-[#1a1a2e] overflow-hidden">
         
-        {/* ✨ 兼容 mini 模式下的点击交互 */}
         <div 
           className="absolute inset-0 z-10" 
           onClick={mini ? onPlayPause : handleScreenClick}
@@ -122,7 +131,7 @@ export function VideoPlayer({
         <video
           ref={videoRef}
           src={videoUrl}
-          poster={poster} // ✨ 绑定封面图
+          poster={poster}
           className="w-full h-full object-cover relative z-0"
           playsInline
           preload="auto"
@@ -131,21 +140,18 @@ export function VideoPlayer({
           onSeeked={onSeeked}
         />
 
-        {/* Play overlay when paused */}
         {!isPlaying && (
           <button
             onClick={(e) => { e.stopPropagation(); onPlayPause(); }}
             className="absolute inset-0 flex items-center justify-center bg-black/20 z-20"
             aria-label="播放"
           >
-            {/* ✨ 根据 mini 模式调整播放按钮大小 */}
             <div className={`rounded-full bg-black/50 flex items-center justify-center ${mini ? 'size-8' : 'size-16'}`}>
               <Play className={`text-white ml-1 ${mini ? 'size-4' : 'size-8'}`} fill="white" />
             </div>
           </button>
         )}
 
-        {/* ✨ 核心修复：小窗模式下隐藏控制栏，并且确保所有的 div 完美闭合 */}
         {!mini && (
           <div 
             className={`absolute bottom-0 left-0 right-0 z-30 transition-opacity duration-300 ${
@@ -158,7 +164,6 @@ export function VideoPlayer({
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
             <div className="relative px-3 pb-2.5 pt-8">
               
-              {/* Progress bar */}
               <div
                 className="relative h-1 bg-white/30 rounded-full cursor-pointer mb-2.5 group/bar"
                 onClick={(e) => {
@@ -171,11 +176,6 @@ export function VideoPlayer({
                   if (progressBarRef.current) progressBarRef.current.style.width = `${pct}%`
                   if (progressThumbRef.current) progressThumbRef.current.style.left = `calc(${pct}% - 6px)`
                 }}
-                role="slider"
-                aria-label="进度条"
-                aria-valuemin={0}
-                aria-valuemax={duration}
-                tabIndex={0}
               >
                 <div
                   ref={progressBarRef}
@@ -194,36 +194,83 @@ export function VideoPlayer({
                   <button
                     onClick={(e) => { e.stopPropagation(); onPlayPause(); }}
                     className="p-0.5 text-white hover:text-white/80 transition-colors"
-                    aria-label={isPlaying ? "暂停" : "播放"}
                   >
-                    {isPlaying
-                      ? <Pause className="size-5" />
-                      : <Play className="size-5" fill="white" />
-                    }
+                    {isPlaying ? <Pause className="size-5" /> : <Play className="size-5" fill="white" />}
                   </button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); onToggleMute?.(); }}
-                    className="p-0.5 text-white hover:text-white/80 transition-colors"
-                    aria-label={muted ? "取消静音" : "静音"}
+
+                  {/* ✨ YouTube 1:1 复刻级联动音量控制：完全自定义进度条 */}
+                  <div 
+                    className="group/volume flex items-center relative"
+                    onMouseLeave={() => setShowVolumeSlider(false)}
+                    // ✨ 核心技巧：通过 CSS 变量驱动填充效果。
+                    // 计算出音量百分比，直接通过 inline style 传给 CSS，供下方填充层使用。
+                    style={{ '--volume-pct': `${muted ? 0 : volume * 100}%` } as React.CSSProperties}
                   >
-                    {muted ? <VolumeX className="size-4" /> : <Volume2 className="size-4" />}
-                  </button>
-                  <span
-                    ref={timeDisplayRef}
-                    className="text-xs text-white/80 font-mono"
-                  >
+                    <button
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        const isTouch = window.matchMedia("(hover: none), (pointer: coarse)").matches;
+                        if (isTouch) {
+                          if (!showVolumeSlider) {
+                            setShowVolumeSlider(true); 
+                          } else {
+                            onToggleMute?.(); 
+                          }
+                        } else {
+                          onToggleMute?.(); 
+                        }
+                      }}
+                      className="p-0.5 text-white hover:text-white/80 transition-colors z-10"
+                    >
+                      {muted || volume === 0 ? <VolumeX className="size-4" /> : <Volume2 className="size-4" />}
+                    </button>
+                    
+                    {/* ✨ 自定义抽屉式音量进度条容器 */}
+                    <div 
+                      className={`overflow-hidden transition-all duration-300 ease-in-out flex items-center ${
+                        showVolumeSlider 
+                          ? 'w-[72px] ml-2' // 展开时的宽度
+                          : 'w-0 ml-0 group-hover/volume:w-[72px] group-hover/volume:ml-2' // Hover 时的宽度
+                      }`}
+                    >
+                      {/* 1:1 复刻的关键：通过 div 自定义轨道和填充 */}
+                      <div 
+                        className="w-[72px] h-[3.5px] bg-white/30 rounded-full cursor-pointer relative group/track"
+                        role="slider"
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-valuenow={muted ? 0 : volume * 100}
+                        aria-label="音量"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          const val = (e.clientX - rect.left) / rect.width;
+                          const clampedVal = Math.max(0, Math.min(1, val)); // 钳制在 0 到 1 之间
+                          setVolume(clampedVal);
+                          // 交互逻辑同步：滑过非 0 区域取消静音，滑到 0 区域开启静音
+                          if (clampedVal > 0 && muted) onToggleMute?.();
+                          if (clampedVal === 0 && !muted) onToggleMute?.();
+                        }}
+                      >
+                        {/* 浅灰色底层轨道 */}
+                        <div className="absolute inset-0 bg-white/20 rounded-full"></div>
+                        {/* 蓝色填充层：其宽度直接使用上方父容器计算好的 CSS 变量 --volume-pct */}
+                        <div className="absolute inset-y-0 left-0 bg-[#3b82f6] rounded-full transition-all duration-75" style={{ width: 'var(--volume-pct)' }}></div>
+                        {/* YouTube 经典的隐形滑块点：只在 hover 时放大出现 */}
+                        <div className="absolute top-1/2 -translate-y-1/2 size-[11px] rounded-full bg-white opacity-0 group-hover/track:opacity-100 transition-opacity transition-transform group-hover/track:scale-100 scale-50" style={{ left: 'calc(var(--volume-pct) - 5.5px)' }}></div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <span ref={timeDisplayRef} className="text-xs text-white/80 font-mono">
                     0:00 / 0:00
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
 
-                  {/* 倍速悬浮菜单 */}
                   <div className="relative flex items-center">
                     <button 
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        setShowSpeedMenu(prev => !prev)
-                      }}
+                      onClick={(e) => { e.stopPropagation(); setShowSpeedMenu(prev => !prev) }}
                       className="text-xs text-white/80 font-medium hover:text-white transition-colors px-1 py-1"
                     >
                       {playbackSpeed}x
@@ -256,7 +303,6 @@ export function VideoPlayer({
 
                   <button
                     className="p-1 text-white hover:text-white/80 transition-colors"
-                    aria-label="全屏"
                     onClick={(e) => { e.stopPropagation(); videoRef.current?.requestFullscreen?.(); }}
                   >
                     <Maximize className="size-4" />

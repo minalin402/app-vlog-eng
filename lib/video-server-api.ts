@@ -13,6 +13,7 @@ import type { VideoDetail } from './video-api'
 
 export interface ServerVideoData extends VideoDetail {
   original_youtube_url: string
+  created_at?: string // ✨ 加上这一行，告诉 TS 我们有这个属性
 }
 
 export interface ServerLearningStatus {
@@ -134,6 +135,7 @@ export async function getVideoDataServer(videoId: string): Promise<ServerVideoDa
       videoUrl: localVideoUrl || video.video_url,
       coverUrl: video.cover_url || '',  // ✨ 新增：把数据库查到的 cover_url 传出去
       original_youtube_url: cleanYoutubeUrl,
+      created_at: video.created_at, // ✨ 务必加上这行！让下面的函数能拿到时间戳
       subtitles: formattedSubtitles,
       vocabularies,
       phrases,
@@ -291,20 +293,54 @@ export async function getUserFavoritesServer(): Promise<string[]> {
 }
 
 /**
- * 一次性获取视频页面所需的所有数据
+ * 一次性获取视频页面所需的所有数据 (包含上下期导航，全景数组游标法)
  * @param videoId 视频 ID
- * @returns 包含视频数据、学习状态、收藏列表的完整数据
+ * @param sortOrder 排序方向
  */
-export async function getVideoPageData(videoId: string) {
+export async function getVideoPageData(videoId: string, sortOrder: 'asc' | 'desc' = 'desc') {
   const [videoData, learningStatus, favoriteIds] = await Promise.all([
     getVideoDataServer(videoId),
     getLearningStatusServer(videoId),
     getUserFavoritesServer(),
   ])
 
+  let prevVideoId = null;
+  let nextVideoId = null;
+
+  if (videoData) {
+    const supabase = await createClient()
+    
+    // 🚀 终极防弹方案：不比对时间，直接拉取和首页【排序规则完全相同】的纯 ID 列表
+    const isAsc = sortOrder === 'asc';
+    
+    // 1. 先把查回来的 data 解构出来
+    const { data } = await supabase
+      .from('videos')
+      .select('id')
+      .order('created_at', { ascending: isAsc })
+      .order('id', { ascending: isAsc })
+
+    // ✨ 2. 核心修复：强行赋予类型！告诉 TS 这是一个包含 id 字符串的数组
+    const allVideos = (data || []) as { id: string }[];
+
+    if (allVideos.length > 0) {
+      // 在这串列表里，找到当前视频排在第几个
+      const currentIndex = allVideos.findIndex(v => v.id === videoId)
+      
+      if (currentIndex !== -1) {
+        // 上一期：就是它头顶上的那一个（防止越界）
+        prevVideoId = currentIndex > 0 ? allVideos[currentIndex - 1].id : null
+        // 下一期：就是它脚底下的那一个（防止越界）
+        nextVideoId = currentIndex < allVideos.length - 1 ? allVideos[currentIndex + 1].id : null
+      }
+    }
+  }
+
   return {
     videoData,
     learningStatus,
     favoriteIds,
+    prevVideoId,
+    nextVideoId
   }
 }
