@@ -189,6 +189,7 @@ interface VideoLearningClientProps {
   prevVideoId?: string | null  // ✨ 新增
   nextVideoId?: string | null  // ✨ 新增
   currentSort?: string         // ✨ 新增
+  from?: string // ✨ 新增
 }
 
 export default function VideoLearningClient({
@@ -199,6 +200,7 @@ export default function VideoLearningClient({
   prevVideoId,   // ✨ 接收
   nextVideoId,   // ✨ 接收
   currentSort,   // ✨ 接收
+  from = 'home', // ✨ 接收并给默认值
 }: VideoLearningClientProps) {
   const router = useRouter()
 
@@ -797,6 +799,7 @@ const rafCallback = useCallback(() => {
         prevVideoId={prevVideoId} 
         nextVideoId={nextVideoId}
         currentSort={currentSort} // ✨ 传递给 Header
+        from={from} // ✨ 透传
       />
 
       {/* ===== DESKTOP (仅在电脑端渲染，彻底消灭冲突) ===== */}

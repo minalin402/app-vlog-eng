@@ -9,9 +9,10 @@ interface VideoGridProps {
   statusFilter: StatusFilter
   advancedFilters: AdvancedFilters
   initialVideos: Video[]
+  sortOrder?: string // ✨ 1. 新增：接收排序状态
 }
 
-export function VideoGrid({ statusFilter, advancedFilters, initialVideos }: VideoGridProps) {
+export function VideoGrid({ statusFilter, advancedFilters, initialVideos, sortOrder = "desc" }: VideoGridProps) {
   // ✨ 本地分页状态：每次展示 12 个
   const [visibleCount, setVisibleCount] = useState(12)
   const observerTarget = useRef<HTMLDivElement>(null)
@@ -85,7 +86,8 @@ export function VideoGrid({ statusFilter, advancedFilters, initialVideos }: Vide
     <div className="flex flex-col gap-4">
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {displayedVideos.map((video, index) => (
-          <VideoCard key={video.id} video={video} priority={index < 4} />
+          // ✨ 2. 传递给 VideoCard
+          <VideoCard key={video.id} video={video} priority={index < 4} sortOrder={sortOrder} />
         ))}
       </div>
       

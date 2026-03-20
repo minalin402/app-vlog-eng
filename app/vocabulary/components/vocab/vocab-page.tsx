@@ -180,7 +180,8 @@ export function VocabPage({
           </div>
 
           <button
-            onClick={() => router.push(`/videos/${activeVideoId}`)}
+            // ✨ 核心修复：让手机端跳转也带上完整参数！
+            onClick={() => router.push(`/videos/${activeVideoId}?sort=desc&from=vocab`)}
             className="p-1.5 bg-[#3b82f6]/10 text-[#3b82f6] hover:bg-[#3b82f6]/20 rounded-md shrink-0 transition-colors"
             title="去学习该视频"
           >

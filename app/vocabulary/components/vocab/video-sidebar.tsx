@@ -63,12 +63,14 @@ export function VideoSidebar({ videos, activeVideoId, onSelectVideo }: VideoSide
             
             {/* 点击图标，直接跳转到视频学习页 */}
             <Link
-              href={`/videos/${video.id}`}
+              // ✨ 核心修复：带上最新发布(desc)的排序和来源(vocab)
+              href={`/videos/${video.id}?sort=desc&from=vocab`} 
               className="p-2 shrink-0 text-muted-foreground hover:text-[#3b82f6] hover:bg-[#3b82f6]/10 rounded-md transition-colors"
               title="前往学习该视频"
             >
               <MonitorPlay className="h-4 w-4" />
             </Link>
+
           </div>
         ))}
       </div>

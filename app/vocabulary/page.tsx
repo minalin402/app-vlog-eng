@@ -9,10 +9,12 @@ export default async function Page() {
   const { data: { user } } = await supabase.auth.getUser()
   
   // 1. 获取所有视频列表
+// 1. 获取所有视频列表
   const { data: videos } = await supabase
     .from('videos')
     .select('id, title')
-    .order('created_at', { ascending: false })
+    .order('created_at', { ascending: false }) // 最新发布（时间倒序）
+    .order('id', { ascending: true })          // ✨ 新增：ID 永远正序（A001 在 A002 前）
   
   // 2. 获取所有词汇项
   const { data: vocabularyItems } = await supabase

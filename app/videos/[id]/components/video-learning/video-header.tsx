@@ -10,6 +10,7 @@ interface VideoHeaderProps {
   prevVideoId?: string | null;
   nextVideoId?: string | null;
   currentSort?: string; // ✨ 新增
+  from?: string; // ✨ 新增
 }
 
 // 2. 在组件括号里把它解构出来（顺便给个默认值 'desc'）
@@ -17,14 +18,25 @@ export function VideoHeader({
   video, 
   prevVideoId, 
   nextVideoId, 
-  currentSort = 'desc' // ✨ 新增这个参数
+  currentSort = 'desc', // ✨ 新增这个参数
+  from = 'home' // ✨ 接收
 }: VideoHeaderProps) {
   const router = useRouter()
+
+  // ✨ 定义退出函数
+  const handleExit = () => {
+    if (from === 'vocab') {
+      router.push('/vocabulary') // 回到词卡页
+    } else {
+      router.push('/') // 回到首页
+    }
+  }
+
   return (
     <header className="flex items-center justify-between px-4 py-3 bg-card shadow-sm shrink-0 z-20">
       <div className="flex items-center gap-2 min-w-0">
         <button
-          onClick={() => router.back()}
+          onClick={handleExit}
           className="p-1 rounded-md hover:bg-accent transition-colors shrink-0 -ml-2"
           aria-label="返回"
         >
@@ -65,7 +77,7 @@ export function VideoHeader({
           {prevVideoId ? (
             <Link 
             prefetch={true} // ✨ 核心提速：开启后台强制预加载
-            href={`/videos/${prevVideoId}?sort=${currentSort}`}
+            href={`/videos/${prevVideoId}?sort=${currentSort}&from=${from}`} // ✨ 加上 from
             className="px-2.5 py-1.5 hover:bg-muted text-muted-foreground hover:text-primary transition-all duration-100 active:scale-90 active:bg-muted-foreground/20 flex items-center justify-center border-r border-border/80" title="上一期">
               <ChevronLeft className="size-4" />
             </Link>
@@ -80,7 +92,7 @@ export function VideoHeader({
           {nextVideoId ? (
             <Link 
               prefetch={true} // ✨ 核心提速：开启后台强制预加载
-              href={`/videos/${nextVideoId}?sort=${currentSort}`}
+              href={`/videos/${nextVideoId}?sort=${currentSort}&from=${from}`} // ✨ 加上 from
               className="px-2.5 py-1.5 hover:bg-muted text-muted-foreground hover:text-primary transition-all duration-100 active:scale-90 active:bg-muted-foreground/20 flex items-center justify-center" title="下一期">
               <ChevronRight className="size-4" />
             </Link>

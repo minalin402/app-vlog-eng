@@ -6,28 +6,28 @@ import type { Video } from "@/lib/types"
 
 /**
  * 🚀 服务端全量获取视频及状态数据
- * 彻底消除客户端的瀑布流请求和计算阻塞
+ * @param sortOrder 从 URL 传进来的排序方向
  */
-async function fetchAllVideoData() {
+async function fetchAllVideoData(sortOrder: 'asc' | 'desc' = 'desc') {
   const supabase = await createClient()
   
-  // 1. 获取当前用户
+  // ✨ 修复 1：定义 isAsc 变量，否则执行到这一行必报错
+  const isAsc = sortOrder === 'asc'
+  
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) {
     redirect("/login")
   }
   
-  // 2. ✨ 核心优化：使用 Promise.all 并行拉取 3 张表的数据
-  // 这样只要花费最慢那一个请求的时间，而不是串行等待
-const [
+  const [
     { data: videosData, error: videosError },
     { data: learningData },
     { data: favoritesData }
   ] = await Promise.all([
     supabase.from('videos')
-      .select('id, title, description, duration, difficulty, cover_url, creator, topics, accent, created_at')
-      .order('created_at', { ascending: false }) // ✨ 删除了 .limit(20)，一次性拿全
-      .order('id', { ascending: false }), // ✨ 核心修复：加这一行！当时间相同时，按 ID 排序（打破平局）
+      .select('id, title, description, duration, difficulty, cover_url, video_url, creator, topics, accent, created_at, updated_at')
+      .order('created_at', { ascending: isAsc }) // 一级排序：随用户选择
+      .order('id', { ascending: !isAsc }),       // ✨ 核心修复：二级排序永远与一级相反！
     supabase.from('user_learning_progress').select('video_id, status, progress').eq('user_id', user.id),
     supabase.from('user_favorites').select('video_id').eq('user_id', user.id)
   ])
@@ -37,25 +37,22 @@ const [
     return []
   }
 
-  // ✨ 修复 2：把整个 record 存下来，而不只是 status
   const learningMap = new Map((learningData || []).map((record: any) => [record.video_id, record]))
   const favoriteSet = new Set((favoritesData || []).map((fav: any) => fav.video_id))
 
-  // 4. 组装视频数据，在服务端直接把“已学习”和“已收藏”的标签打好
   const videos: Video[] = (videosData || []).map((v: any) => ({
     id: v.id,
     title: v.title,
     description: v.description || '',
     duration: v.duration,
     difficulty: v.difficulty,
-    video_url: v.video_url,
+    video_url: v.video_url, // 现在 select 里有了，不会报错了
     cover_url: v.cover_url,
     creator: v.creator || 'Unknown',
     topics: Array.isArray(v.topics) ? v.topics : [],
     accent: v.accent || 'General',
     created_at: v.created_at,
     updated_at: v.updated_at,
-    // ✨ 修复 3：直接在这里把 status 和 progress 打包塞进视频数据里！
     status: learningMap.get(v.id)?.status || 'unlearned', 
     progress: learningMap.get(v.id)?.progress || 0,
     isFavorite: favoriteSet.has(v.id), 
@@ -65,31 +62,37 @@ const [
 }
 
 /**
- * 抽离的异步组件
+ * ✨ 修复 3：异步组件需要接收参数并传递给 fetch 函数
  */
-async function VideoListLoader() {
-  const initialVideos = await fetchAllVideoData()
-  
-  // ✨ 删掉 filter 参数，只传视频数据
+async function VideoListLoader({ sortOrder }: { sortOrder: 'asc' | 'desc' }) {
+  const initialVideos = await fetchAllVideoData(sortOrder)
   return <DashboardClient initialVideos={initialVideos} />
 }
 
-
 /**
  * 首页主入口
+ * ✨ 修复 4：必须是 async 且接收 { searchParams } 参数，这是 Next.js 15 的规范
  */
-export default function DashboardPage() {
+export default async function DashboardPage({ 
+  searchParams 
+}: { 
+  searchParams: Promise<{ sort?: string }> 
+}) {
+  // ✨ 修复 5：必须 await 参数，否则无法读取 sort 值
+  const resolvedParams = await searchParams
+  const currentSort = resolvedParams.sort === 'asc' ? 'asc' : 'desc'
+
   return (
     <Suspense 
+      key={currentSort} // ✨ 关键：排序变了就重新显示 loading，体验才好
       fallback={
         <div className="flex flex-col items-center justify-center py-32 text-muted-foreground animate-pulse">
           <div className="h-8 w-8 mb-4 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-          <p className="text-sm">正在获取最新视频列表...</p>
+          <p className="text-sm">正在获取视频列表...</p>
         </div>
       }
     >
-      {/* ✨ 这里不要传参数 */}
-      <VideoListLoader /> 
+      <VideoListLoader sortOrder={currentSort} /> 
     </Suspense>
   )
 }

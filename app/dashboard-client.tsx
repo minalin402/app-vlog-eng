@@ -25,9 +25,17 @@ export function DashboardClient({ initialVideos }: DashboardClientProps) {
     return [...initialVideos].sort((a, b) => {
       const dateA = a.created_at ? new Date(a.created_at).getTime() : 0
       const dateB = b.created_at ? new Date(b.created_at).getTime() : 0
+      
       if (dateA === dateB) {
-        return sortOrder === "desc" ? b.title.localeCompare(a.title) : a.title.localeCompare(b.title)
+        // 🚀 终极对齐：摒弃按 title 排序，严格遵守“绝对镜像定律”按 ID 排序！
+        // 当 sortOrder === "desc"（最新发布）时，时间降序，ID 必须升序（a.id -> b.id）
+        // 当 sortOrder === "asc"（最早发布）时，时间升序，ID 必须降序（b.id -> a.id）
+        return sortOrder === "desc" 
+          ? String(a.id).localeCompare(String(b.id)) 
+          : String(b.id).localeCompare(String(a.id))
       }
+      
+      // 时间排序保持不变
       return sortOrder === "desc" ? dateB - dateA : dateA - dateB
     })
   }, [initialVideos, sortOrder])
@@ -72,6 +80,7 @@ export function DashboardClient({ initialVideos }: DashboardClientProps) {
             initialVideos={sortedVideos} 
             statusFilter={statusFilter} 
             advancedFilters={advancedFilters} 
+            sortOrder={sortOrder} // ✨ 核心：把本地的排序状态派发下去！
           />
         </main>
       </div>

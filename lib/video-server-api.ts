@@ -136,6 +136,7 @@ export async function getVideoDataServer(videoId: string): Promise<ServerVideoDa
       coverUrl: video.cover_url || '',  // ✨ 新增：把数据库查到的 cover_url 传出去
       original_youtube_url: cleanYoutubeUrl,
       created_at: video.created_at, // ✨ 务必加上这行！让下面的函数能拿到时间戳
+      updated_at: video.updated_at, // ✨ 必须加上这一行，否则下面拿不到值
       subtitles: formattedSubtitles,
       vocabularies,
       phrases,
@@ -297,6 +298,12 @@ export async function getUserFavoritesServer(): Promise<string[]> {
  * @param videoId 视频 ID
  * @param sortOrder 排序方向
  */
+/**
+ * ✨ 终极对齐版：精准定位上下期邻居（ID 始终正序逻辑）
+ */
+/**
+ * ✨ 完美对齐版：基于“绝对镜像定律”的上下期导航
+ */
 export async function getVideoPageData(videoId: string, sortOrder: 'asc' | 'desc' = 'desc') {
   const [videoData, learningStatus, favoriteIds] = await Promise.all([
     getVideoDataServer(videoId),
@@ -307,40 +314,43 @@ export async function getVideoPageData(videoId: string, sortOrder: 'asc' | 'desc
   let prevVideoId = null;
   let nextVideoId = null;
 
-  if (videoData) {
+  if (videoData && videoData.created_at) {
     const supabase = await createClient()
-    
-    // 🚀 终极防弹方案：不比对时间，直接拉取和首页【排序规则完全相同】的纯 ID 列表
     const isAsc = sortOrder === 'asc';
-    
-    // 1. 先把查回来的 data 解构出来
-    const { data } = await supabase
-      .from('videos')
+    const curTime = videoData.created_at;
+    const curId = videoData.id;
+
+    // 🚀 获取上一期 (Prev)：找列表里排在它上面的
+    const prevRes = await supabase.from('videos')
       .select('id')
+      .or(isAsc 
+        // 升序(最早): 找时间更早的，或时间相同但 ID 更大的
+        ? `created_at.lt.${curTime},and(created_at.eq.${curTime},id.gt.${curId})` 
+        // 降序(最新): 找时间更晚的，或时间相同但 ID 更小的
+        : `created_at.gt.${curTime},and(created_at.eq.${curTime},id.lt.${curId})`
+      )
+      // 找距离当前视频最近的一个，所以排序要和列表完全反过来
+      .order('created_at', { ascending: !isAsc })
+      .order('id', { ascending: isAsc }) 
+      .limit(1);
+
+    // 🚀 获取下一期 (Next)：找列表里排在它下面的
+    const nextRes = await supabase.from('videos')
+      .select('id')
+      .or(isAsc 
+        // 升序(最早): 找时间更晚的，或时间相同但 ID 更小的
+        ? `created_at.gt.${curTime},and(created_at.eq.${curTime},id.lt.${curId})` 
+        // 降序(最新): 找时间更早的，或时间相同但 ID 更大的
+        : `created_at.lt.${curTime},and(created_at.eq.${curTime},id.gt.${curId})`
+      )
+      // 找距离当前视频最近的一个，排序和列表一模一样
       .order('created_at', { ascending: isAsc })
-      .order('id', { ascending: isAsc })
+      .order('id', { ascending: !isAsc }) 
+      .limit(1);
 
-    // ✨ 2. 核心修复：强行赋予类型！告诉 TS 这是一个包含 id 字符串的数组
-    const allVideos = (data || []) as { id: string }[];
-
-    if (allVideos.length > 0) {
-      // 在这串列表里，找到当前视频排在第几个
-      const currentIndex = allVideos.findIndex(v => v.id === videoId)
-      
-      if (currentIndex !== -1) {
-        // 上一期：就是它头顶上的那一个（防止越界）
-        prevVideoId = currentIndex > 0 ? allVideos[currentIndex - 1].id : null
-        // 下一期：就是它脚底下的那一个（防止越界）
-        nextVideoId = currentIndex < allVideos.length - 1 ? allVideos[currentIndex + 1].id : null
-      }
-    }
+    prevVideoId = (prevRes.data as any)?.[0]?.id || null;
+    nextVideoId = (nextRes.data as any)?.[0]?.id || null;
   }
 
-  return {
-    videoData,
-    learningStatus,
-    favoriteIds,
-    prevVideoId,
-    nextVideoId
-  }
+  return { videoData, learningStatus, favoriteIds, prevVideoId, nextVideoId }
 }

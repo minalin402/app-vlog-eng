@@ -12,9 +12,10 @@ import type { Video } from "@/lib/types"
 interface VideoCardProps {
   video: Video
   priority?: boolean
+  sortOrder?: string // ✨ 1. 新增：接收从外层传来的排序状态
 }
 
-export function VideoCard({ video, priority = false }: VideoCardProps) {
+export function VideoCard({ video, priority = false, sortOrder = "desc" }: VideoCardProps) {
   const [isFavorite, setIsFavorite] = useState(video.isFavorite)
 
   // ✨ 修复：定义 formattedDate
@@ -53,7 +54,10 @@ export function VideoCard({ video, priority = false }: VideoCardProps) {
   }, [isFavorite, video.id])
 
   return (
-    <Link href={`/videos/${video.id}`} className="group relative flex flex-col w-full h-full overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-all hover:shadow-md">
+    <Link 
+      href={`/videos/${video.id}?sort=${sortOrder}&from=home`}
+      className="group relative flex flex-col w-full h-full overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-all hover:shadow-md"
+    >
       {/* 收藏按钮 */}
       <button onClick={handleToggleFavorite} className={cn(
         "absolute top-3 right-3 z-20 flex size-8 items-center justify-center rounded-full shadow-sm transition-all backdrop-blur-md",
