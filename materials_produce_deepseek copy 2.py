@@ -3,21 +3,16 @@ import json
 import pysrt
 import csv
 import math
-import re
-import difflib  # ✨ 模糊对齐算法需要
-import time
-from datetime import datetime
-from moviepy.editor import VideoFileClip # ✨ Whisper 抽音频需要
+import re  # ✨ 新增：引入正则表达式库，用于精准时间戳匹配
 from openai import OpenAI
+from datetime import datetime
+import time # ✨ 确保文件顶部有 import time
 
 # ================= 配置区 =================
 API_KEY = "sk-Nz3U2yrzWDvm6kFz0qHOImjGtK2xae6fXG1w49dNEItCZ1Na" 
-BASE_URL = "https://crazyrouter.com/v1" 
+BASE_URL = "https://crazyrouter.com/v1" # 中转站地址
 
 client = OpenAI(api_key=API_KEY, base_url=BASE_URL)
-
-# ✨ 配置原始视频源路径（Whisper 去这里找 MP4）
-src_clips_dir = r"D:\DMy_Code_Projects\English_Factory\clips_project\videos\clips"
 # ==========================================
 
 def format_duration(seconds):
@@ -48,11 +43,74 @@ def load_clips_csv(csv_path):
                 }
     return clips_info
 
+def parse_srt_to_array(file_path):
+    """解析 SRT 为基础数组"""
+    subs = pysrt.open(file_path)
+    subtitles = []
+    text_for_ai = []
+    
+    last_end_time = 0.0
+    for i, sub in enumerate(subs):
+        start_sec = sub.start.ordinal / 1000.0
+        end_sec = sub.end.ordinal / 1000.0
+        text = sub.text.replace('\n', ' ')
+        
+        subtitles.append({
+            "id": f"s{i+1}",
+            "startTime": round(start_sec, 2),
+            "endTime": round(end_sec, 2),
+            "en": text,
+            "zh": "" # 预留给 AI 填空
+        })
+        text_for_ai.append(f"[{format_duration(start_sec)}] {text}")
+        last_end_time = end_sec
+        
+    return subtitles, " ".join(text_for_ai), last_end_time
+
+# ✨ 核心重构：程序化精准查找第一次出现的时间（三级降级匹配）
+# ✨ 核心重构：支持跨行字幕拼接的终极雷达
+# ✨ 核心重构：彻底解决时间戳漂移和 0.0 的终极雷达
+def find_exact_time(target_text, subtitles_array, context_text=""):
+    if not target_text: return 0.0
+    
+    target_lower = target_text.lower().strip()
+    escaped_target = re.escape(target_lower)
+    pattern = rf"\b{escaped_target}\b"
+    
+    # --- 级别 1：全部单行精准匹配 ---
+    # 🚨 必须先查完所有的单行！防止双行拼接时提前抢占了上一行的时间戳
+    for sub in subtitles_array:
+        if re.search(pattern, sub["en"].lower()):
+            return sub["startTime"]
+            
+    # --- 级别 1.5：跨行滑动窗口匹配 (专治跨行短语) ---
+    # 如果单行全军覆没，且是个短语（包含空格），我们才拼接相邻两行进行查找
+    if " " in target_lower:
+        for i in range(len(subtitles_array) - 1):
+            combined_sub = subtitles_array[i]["en"].lower() + " " + subtitles_array[i+1]["en"].lower()
+            if re.search(pattern, combined_sub):
+                return subtitles_array[i]["startTime"]
+
+    # --- 级别 2：利用 Context 原句宽泛兜底 ---
+    if context_text:
+        clean_context = re.sub(r'[^\w\s]', '', context_text.lower().strip())
+        for sub in subtitles_array:
+            clean_sub = re.sub(r'[^\w\s]', '', sub["en"].lower())
+            if len(clean_sub) > 5 and (clean_sub in clean_context or clean_context in clean_sub):
+                return sub["startTime"]
+
+    # --- 级别 3：基础降级匹配 ---
+    if len(target_lower) > 3: 
+        for sub in subtitles_array:
+            if target_lower in sub["en"].lower():
+                return sub["startTime"]
+                
+    return 0.0
+
 
 def call_deepseek_with_retry(messages, response_format=None, temperature=0.2):
-    """拥有极强生存能力的 API 重试机制"""
-    max_retries = 10  # ✨ 提高重试次数到 10 次，给足中转站恢复的时间
-    retry_delay = 5   # 初始等待 5 秒
+    max_retries = 5
+    retry_delay = 5
     
     for i in range(max_retries):
         try:
@@ -65,122 +123,41 @@ def call_deepseek_with_retry(messages, response_format=None, temperature=0.2):
             return response.choices[0].message.content
         except Exception as e:
             err_msg = str(e)
-            
-            # 如果是鉴权失败（密码填错了），这是硬伤，直接结束
-            if "401" in err_msg and "Unauthorized" in err_msg:
-                print(f"❌ API 密钥失效或错误，请检查 API_KEY: {e}")
+            if "429" in err_msg or "rate limit" in err_msg.lower():
+                print(f"⚠️  DeepSeek 拥挤 (429)，第 {i+1} 次重试，等待 {retry_delay} 秒...")
+                time.sleep(retry_delay)
+                retry_delay *= 2 
+            else:
+                print(f"❌ API 致命错误: {e}")
                 return None
-                
-            # ✨ 核心升级：无论是 429(限流), 503(不可用), 502(网关错), 还是 timeout 超时，全部拦截并重试！
-            print(f"⚠️  接口波动 (拦截到报错: {err_msg})")
-            print(f"   -> 正在进行第 {i+1}/{max_retries} 次重试，休眠等待 {retry_delay} 秒...")
-            
-            time.sleep(retry_delay)
-            # 渐进式延迟策略：5秒, 10秒, 15秒, 20秒... 最长单次等 30 秒
-            # 这样既能快速重连，又能避免把本来就拥挤的服务器彻底打崩
-            retry_delay = min(retry_delay + 5, 30) 
-            
-    print("❌ 达到最大重试次数 10 次，服务器可能彻底宕机，该步骤放弃。")
     return None
-# ----------------- AI 车间 1：字幕 -----------------
-def normalize_text(text):
-    """文本清洗，用于严苛的文本比对"""
-    return re.sub(r'[\W_]+', '', str(text)).lower()
 
-def get_whisper_asset(mp4_path, whisper_save_path):
-    """1. 查看本地是否已有 whisper 文件（自带强力防 503 重试机制）"""
-    if os.path.exists(whisper_save_path):
-        print("  📦 读取本地已沉淀的 Whisper 资产...")
-        with open(whisper_save_path, 'r', encoding='utf-8') as f:
-            return json.load(f)
-            
-    print("  -> 正在从视频抽取音频轨道...")
-    mp3_path = mp4_path.replace(".mp4", ".mp3")
-    if not os.path.exists(mp3_path):
-        try:
-            video = VideoFileClip(mp4_path)
-            video.audio.write_audiofile(mp3_path, verbose=False, logger=None)
-            video.close()
-        except Exception as e:
-            print(f"❌ 抽取音频失败: {mp4_path}")
-            return None
-        
-    print("  -> 正在调用 Whisper 获取单词级时间轴...")
+# ----------------- AI 车间 1：翻译专员 -----------------
+# ----------------- AI 车间 1：字幕重构与翻译专员 -----------------
+def ai_rebuild_and_translate_subtitles(subtitles_array):
+    """【革命性升级】不仅翻译，还能将无标点的破碎字幕按语义缝合成完整句子，并重算时间戳"""
+    mini_subs = [{"id": s["id"], "text": s["en"]} for s in subtitles_array]
     
-    # =======================================================
-    # ✨ 核心修复：这里是唯一调用 Whisper 的地方，被重试装甲死死包裹！
-    # =======================================================
-    max_retries = 10
-    retry_delay = 5
-    transcript = None
-    
-    for i in range(max_retries):
-        try:
-            with open(mp3_path, "rb") as audio_file:
-                transcript = client.audio.transcriptions.create(
-                    file=audio_file, model="whisper-1",
-                    response_format="verbose_json", timestamp_granularities=["word"]
-                )
-            break  # 如果成功了，立刻跳出重试循环，不再重试
-            
-        except Exception as e:
-            err_msg = str(e)
-            if "401" in err_msg and "Unauthorized" in err_msg:
-                print(f"❌ API 密钥失效，请检查: {e}")
-                return None
-                
-            print(f"⚠️  Whisper 接口波动 (拦截到报错: {err_msg})")
-            print(f"   -> 正在进行第 {i+1}/{max_retries} 次重试，休眠等待 {retry_delay} 秒...")
-            time.sleep(retry_delay)
-            # 渐进式延迟策略：5秒, 10秒, 15秒... 最长单次等 30 秒
-            retry_delay = min(retry_delay + 5, 30)
-            
-    if not transcript:
-        print("❌ Whisper 达到最大重试次数 10 次，该视频放弃处理。")
-        return None
-    # =======================================================
-
-    asset_data = []
-    for w in transcript.words:
-        asset_data.append({
-            "word": w.word if hasattr(w, 'word') else w["word"],
-            "start": w.start if hasattr(w, 'start') else w["start"],
-            "end": w.end if hasattr(w, 'end') else w["end"]
-        })
-    with open(whisper_save_path, 'w', encoding='utf-8') as f:
-        json.dump(asset_data, f, ensure_ascii=False, indent=2)
-    print(f"  💾 已沉淀底层单词时间轴至: {whisper_save_path}")
-    return asset_data
-
-def deepseek_segment_and_translate(raw_text):
-    """只负责切分意群和翻译，没有任何 ID 包袱！"""
-    print("  -> 正在调用 DeepSeek 进行完美意群断句...")
     prompt = f"""
     角色：资深英语教研员与专业字幕编辑。
     
     【核心任务】
-    下面是一段【人工精心校对过】的连续英文文本（没有标点符号）。
-    请你将其按“完整的语法语义”和“适合英语学习者跟读的长度”进行切分，添加正确的标点，并提供自然流畅的中文翻译。
+    用户提供的字幕是机器识别的碎片，缺乏标点和大小写，且经常把一个完整的句子拦腰截断。
+    请你将这些碎片按“完整的语法语义”和“适合英语学习者跟读的长度”进行合并，添加正确的标点，并提供自然流畅的中文翻译。
     
     【严格规则】
     1. 标点恢复：必须在英文 `en` 字段中补全正确的逗号、句号、问号等，并修正大小写。
-    2. 绝不遗漏与篡改：绝对不允许修改、增加、删减任何一个原文字母！原文是什么就输出什么，哪怕一个介词都不准改。
+    2. 绝不遗漏：必须包含传入的所有碎片内容，不能随意删减、修改原词。
     3. 断句要求
-        【🚨 致命红线 1：字数超载熔断】
-        每句话【绝对不能超过 15 个单词】！如果遇到长句，必须果断在连词、从句引导词前切断！宁可句子短，也绝不能长！
-        
-        【🚨 致命红线 2：绝对不允许的断句方式】
-        1) 严禁主谓分离：绝对不能在主语和谓语之间断开。
-        2) 严禁切断介词短语/动词短语：绝对不能以 in, on, at, of, with 等介词结尾。
+        【🚨 致命红线：绝对不允许的断句方式 🚨】
+        大语言模型在合并长文本时容易犯错，请你必须遵守以下“强制意群边界法则”：
+        1)严禁主谓分离：绝对不能在主语和谓语之间断开。
+        2)严禁切断介词短语/动词短语：绝对不能以 in, on, at, of, with 等介词结尾。
         3) 严禁以冠词或连词结尾：绝对不能以 a, the, and, but, or, because, so 等词结尾。
         4) 严禁以助动词/系动词结尾：绝对不能以 is, are, have, has, been 等结尾。
-        
-        【🚨 致命红线 3：严禁任何拼写/语法纠错与口语展开】（极其重要！！！）
-        1) 口语中经常有缩略词（如 gonna, wanna, gotta, 'cause, 'em 等），【绝对禁止】将它们擅自展开为 going to, want to, because 等标准形式！
-        2) 提供的原文是极其真实的口语，可能存在语法错误、病句或错词（比如本该是 plan 却说了 play），你【绝对不准】自作主张去“修复”、“润色”或“猜词”！原文错，你就错着输出，你唯一的任务只是加标点和断句！
 
         【✅ 推荐的断句位置（意群交接处）】
-        如果一个句子过长，请优先在以下位置断开：
+        如果一个句子过长（超过12个词），请优先在以下位置断开：
         1) 标点符号处（逗号、句号、问号）。
         2) 并列连词前（在 and, but, or 之前断开，让连词作为下一句的开头）。
         3) 从句引导词前（在 that, which, who, where, because, when, if, although 之前断开）。
@@ -190,187 +167,136 @@ def deepseek_segment_and_translate(raw_text):
         🔴 Bad Case (机器乱断的，绝对禁止)：
         {{
         "data": [
-            {{ "en": "I have just been getting some work done, answering some emails, finishing up a video, and I've", "zh": "我刚才一直在处理一些工作，回复一些邮件，完成一个视频，而且我还" }},
-            {{ "en": "also been planning the week ahead because today is Friday", "zh": "在规划接下来的一周，因为今天是星期五" }}
+            {{ "merged_ids": ["s1"], "en": "I have just been getting some work done, answering some emails, finishing up a video, and I've", "zh": "我刚才一直在处理一些工作，回复一些邮件，完成一个视频，而且我还" }},
+            {{ "merged_ids": ["s2"], "en": "also been planning the week ahead because today is Friday", "zh": "在规划接下来的一周，因为今天是星期五" }}
         ]
         }}
         🟢 Good Case (基于意群的完美断句)：
         {{
         "data": [
-            {{ "en": "I have just been getting some work done, answering some emails, finishing up a video,", "zh": "我刚才一直在处理一些工作，回复一些邮件，完成一个视频，" }},
-            {{ "en": "and I've also been planning the week ahead", "zh": "并且我也在规划接下来的一周，" }},
-            {{ "en": "because today is Friday.", "zh": "因为今天是星期五。" }}
+            {{ "merged_ids": ["s1"], "en": "I have just been getting some work done, answering some emails, finishing up a video,", "zh": "我刚才一直在处理一些工作，回复一些邮件，完成一个视频，" }},
+            {{ "merged_ids": ["s2"], "en": "and I've also been planning the week ahead", "zh": "并且我也在规划接下来的一周，" }},
+            {{ "merged_ids": ["s3"], "en": "because today is Friday.", "zh": "因为今天是星期五。" }}
         ]
         }}
-    4.防止重复结语：处理完最后一句文本后，立即停止输出。绝对不要在最后自行添加任何总结性或重复性的废话。
+    4.防止重复结语：严格按照提供的原始碎片进行翻译。在处理完最后一个碎片后，立即停止输出。绝对不要在最后自行添加任何总结性或重复性的废话。
+    
     
     【语气指导】
-    1. 自然且专业：中文应听起来自然地像母语者，但不要使用俚语或过于随意的表达。
-    2. 避免“网络流行语”：除非英文明确使用了Z世代俚语，否则不要使用网络用语。
-    3. 功能等效：继续以意义为主进行翻译而非逐字翻译，但保持标准语气。
+    1. 自然且专业：中文应听起来自然地像母语者，但不要使用俚语或过于随意的表达（除非原文使用了俚语）。
+    2. 避免“网络流行语”：除非英文明确使用了Z世代俚语，否则不要使用诸如“绝绝子”“咱们就是说”之类的网络用语。
+    3. 功能等效：继续以意义为主进行翻译而非逐字翻译（例如“run a business” -> “经营公司”），但保持标准语气。
+    4. 翻译：在 `zh` 字段给出自然流畅的中文翻译。
 
-    ⛔ 严格格式：只输出合法 JSON，格式必须如下（注意：不再需要 merged_ids）：
+    ⛔ 严格格式：只输出合法 JSON，格式必须如下：
     {{
       "data": [
         {{
-          "en": "All right guys, here is what we're making today.",
-          "zh": "好了各位，这就是我们今天要做的。"
+          "merged_ids": ["s1", "s2"], // 包含被合并碎片的 ID 数组
+          "en": "All right guys, here is what we're making today.", // 缝合后加好标点大小写的英文
+          "zh": "好了各位，这就是我们今天要做的。" // 中文翻译
         }},
         {{
+          "merged_ids": ["s3"],
           "en": "Let's get started!",
           "zh": "我们开始吧！"
         }}
       ]
     }}
 
-    待处理文本：
-    {raw_text}
+    待处理的原始碎片：
+    {json.dumps(mini_subs, ensure_ascii=False)}
     """
+    
     content = call_deepseek_with_retry(
         messages=[{"role": "user", "content": prompt}],
-        response_format={"type": "json_object"}, temperature=0.1
+        response_format={"type": "json_object"} if "deepseek" not in BASE_URL else None,
+        temperature=0.1
     )
-    if not content: return []
+    
+    if not content: return subtitles_array # 如果失败，返回原碎片兜底
     
     try:
-        # 🧹 强力清洗装甲
+        # 🧹 强力清洗：剥离 AI 可能带上的 Markdown 外壳和首尾空格
         content = content.replace("```json", "").replace("```", "").strip()
+        
+        # ✨ 强制清理 AI 废话：暴力截取 JSON 部分，丢弃所有前后废话
         start_idx = content.find('{')
         end_idx = content.rfind('}')
         if start_idx != -1 and end_idx != -1 and end_idx > start_idx:
             content = content[start_idx:end_idx+1]
             
-        ds_sentences = json.loads(content).get("data", [])
-        if not ds_sentences: return []
-
-        # =====================================================================
-        # 🛡️ 物理还原力场：用 Python 把 AI 潜在篡改的文本强行换回 SRT 原文！
-        # =====================================================================
-        print("  -> 正在启动物理还原力场，夺回原汁原味的 SRT 文本...")
-        raw_words = raw_text.split()
-        restored_sentences = []
-        word_idx = 0
-        total_words = len(raw_words)
+        res_json = json.loads(content)
+        ai_merged_data = res_json.get("data", [])
         
-        def normalize(w):
-            return re.sub(r'[\W_]+', '', w).lower()
-
-        for i in range(len(ds_sentences)):
-            item = ds_sentences[i]
+        # =========================================================
+        # 🛡️ 终极物理防弹装甲 3.0：【绝对时间轴 + 精准漏句打捞】
+        # =========================================================
+        rebuilt_subtitles = []
+        last_processed_idx = -1 
+        
+        for item in ai_merged_data:
+            en_text = item.get("en", "")
+            if not en_text: continue
             
-            # 1. 结尾兜底：如果是最后一句，直接把剩下的所有原文包圆
-            if i == len(ds_sentences) - 1:
-                exact_en = " ".join(raw_words[word_idx:])
-                if exact_en.strip():
-                    restored_sentences.append({"en": exact_en, "zh": item["zh"]})
-                break
+            raw_ids_str = str(item.get("merged_ids", ""))
+            # 1. 暴力提取所有的数字
+            nums = [int(n) - 1 for n in re.findall(r'\d+', raw_ids_str)]
             
-            # 2. 探路锚点：寻找下一句开头的前 3 个词
-            next_en = ds_sentences[i+1]["en"]
-            anchors = [normalize(w) for w in next_en.split() if normalize(w)][:3]
+            # 2. 严格过滤：必须存在，且必须严格大于上一次处理的下标（斩杀重复废话）
+            valid_nums = sorted(list(set([n for n in nums if n < len(subtitles_array) and n > last_processed_idx])))
             
-            found_boundary = False
-            search_limit = min(word_idx + 40, total_words) # 往前最多找 40 个词
-            
-            for j in range(word_idx, search_limit):
-                match_count = 0
-                for k, anchor in enumerate(anchors):
-                    if j + k < total_words and normalize(raw_words[j+k]) == anchor:
-                        match_count += 1
-                    else:
-                        break
+            # 🚨 如果这句话连一个没用过的合法数字都没有，说明是重复废话或幻觉，直接斩杀
+            if not valid_nums:
+                continue
                 
-                # 如果锚点全中，说明找到了切分边界！
-                if match_count > 0 and match_count == len(anchors):
-                    # 🔪 物理切割：无视 AI 输出的英文拼写，直接从原始文本上切下这段
-                    exact_en = " ".join(raw_words[word_idx:j])
-                    restored_sentences.append({"en": exact_en, "zh": item["zh"]})
-                    word_idx = j
-                    found_boundary = True
-                    break
+            first_idx = valid_nums[0]
+            last_idx = valid_nums[-1]
+
+            # 🚑 核心漏句打捞：如果在当前这句话之前，有被 AI 偷偷漏掉的碎片（gap）
+            # 我们原封不动地把漏掉的碎片捡回来，插进原位！绝对不硬扯时间戳！
+            if first_idx > last_processed_idx + 1:
+                for i in range(last_processed_idx + 1, first_idx):
+                    rebuilt_subtitles.append({
+                        "id": f"s{len(rebuilt_subtitles)+1}",
+                        "startTime": subtitles_array[i]["startTime"],
+                        "endTime": subtitles_array[i]["endTime"],
+                        "en": subtitles_array[i]["en"],
+                        "zh": "" # AI 漏翻的，中文留空
+                    })
             
-            # 3. 极端兜底：如果 AI 瞎改导致锚点失效，按 AI 的输出单词数量硬切
-            if not found_boundary:
-                curr_word_count = len([w for w in item["en"].split() if normalize(w)])
-                end_idx = min(word_idx + curr_word_count, total_words)
-                exact_en = " ".join(raw_words[word_idx:end_idx])
-                restored_sentences.append({"en": exact_en, "zh": item["zh"]})
-                word_idx = end_idx
-
-        return restored_sentences
-
-    except Exception as e:
-        print(f"❌ DeepSeek 断句解析失败: {e}")
-        return []
-
-def align_timestamps(ds_sentences, whisper_words):
-    """4. 全片去重拦截 + 毫秒级滑动窗口对齐 (彻底修复短词幽灵匹配)"""
-    print("  -> 正在执行毫秒级单词时间轴锁定算法...")
-    aligned_subtitles = []
-    word_idx = 0
-    total_words = len(whisper_words)
-    seen_texts_norm = set()
-
-    def normalize_text(t):
-        return re.sub(r'[\W_]+', '', str(t)).lower()
-
-    for item in ds_sentences:
-        en_sentence = item["en"]
-        norm_en = normalize_text(en_sentence)
-        
-        if norm_en in seen_texts_norm and len(norm_en) > 5:
-            print(f"    🚫 [拦截重复] 发现重复/幻觉句子，已舍弃: {en_sentence}")
-            continue
-        
-        sentence_words = [w for w in re.split(r'[\s\-]+', en_sentence) if normalize_text(w)]
-        if not sentence_words: continue
+            # 🚀 正常装载 AI 合并的这句话，时间戳严格取它自己拥有的物理碎片
+            start_time = subtitles_array[first_idx]["startTime"]
+            end_time = subtitles_array[last_idx]["endTime"]
             
-        start_time, end_time = None, None
-        temp_idx = word_idx
-        
-        for sw in sentence_words:
-            norm_sw = normalize_text(sw)
-            for offset in range(15):
-                if temp_idx + offset < total_words:
-                    ww = whisper_words[temp_idx + offset]
-                    ww_word = ww.get("word", "")
-                    norm_ww = normalize_text(ww_word)
-                    
-                    # =======================================================
-                    # ✨ 核心修复：严禁短单词瞎匹配！
-                    # =======================================================
-                    is_match = False
-                    if norm_sw == norm_ww:
-                        is_match = True
-                    elif len(norm_sw) >= 4 and len(norm_ww) >= 4:
-                        # 只有超过 4 个字母的长单词，才允许模糊包含关系（容忍 monitoring 和 monitor）
-                        if norm_sw in norm_ww or norm_ww in norm_sw:
-                            is_match = True
-                    
-                    if is_match:
-                        if start_time is None: start_time = ww.get("start")
-                        end_time = ww.get("end")
-                        temp_idx = temp_idx + offset + 1
-                        break
-        
-        if start_time is not None and end_time is not None:
-            # 🛡️ 终极防线：规避极端情况下 Whisper 的幽灵 0 秒数据
-            if end_time <= start_time:
-                end_time = start_time + 0.1  
-                
-            aligned_subtitles.append({
-                "id": f"s{len(aligned_subtitles)+1}",
-                "startTime": round(start_time, 2), 
-                "endTime": round(end_time, 2),
-                "en": en_sentence, 
-                "zh": item["zh"]
+            rebuilt_subtitles.append({
+                "id": f"s{len(rebuilt_subtitles)+1}",
+                "startTime": start_time,
+                "endTime": end_time,
+                "en": en_text,
+                "zh": item.get("zh", "")
             })
-            seen_texts_norm.add(norm_en)
-            word_idx = temp_idx
+            
+            # 推进锁死指针
+            last_processed_idx = last_idx
 
-    return aligned_subtitles
-
-
+        # 🚑 结尾兜底机制：如果 AI 罢工，漏掉了视频结尾的碎片，全部原样打捞回来
+        if last_processed_idx < len(subtitles_array) - 1:
+            for i in range(last_processed_idx + 1, len(subtitles_array)):
+                rebuilt_subtitles.append({
+                    "id": f"s{len(rebuilt_subtitles)+1}",
+                    "startTime": subtitles_array[i]["startTime"],
+                    "endTime": subtitles_array[i]["endTime"],
+                    "en": subtitles_array[i]["en"],
+                    "zh": ""
+                })
+                
+        return rebuilt_subtitles if rebuilt_subtitles else subtitles_array
+              
+    except Exception as e:
+        print(f"❌ 字幕重构解析失败: {e}")
+        return subtitles_array
+    
 
 # ----------------- AI 车间 2：教研专家 (化整为零+串行黑名单) -----------------
 def _call_deepseek_json(prompt, step_name):
@@ -580,40 +506,11 @@ def ai_extract_knowledge(text, creator_name="这位博主"):
 
     return final_knowledge
 
-def find_precise_start_time_with_preroll(target_text, whisper_asset):
-    """带有 0.8s 缓冲的单词级点读提取"""
-    if not target_text: return 0.0
-    clean_target = normalize_text(target_text)
-    
-    full_str, char_map = "", []
-    for i, w in enumerate(whisper_asset):
-        clean_w = normalize_text(w.get("word", ""))
-        if not clean_w: continue
-        start_pos = len(full_str)
-        full_str += clean_w
-        for _ in range(start_pos, len(full_str)): char_map.append(i)
-            
-    matcher = difflib.SequenceMatcher(None, full_str, clean_target)
-    match = matcher.find_longest_match(0, len(full_str), 0, len(clean_target))
-    
-    if match.size > 0:
-        first_word_idx = char_map[match.a]
-        exact_start = whisper_asset[first_word_idx]["start"]
-        
-        adjusted_idx = first_word_idx
-        for i in range(1, 5):
-            curr_idx = first_word_idx - i
-            if curr_idx < 0: break
-            adjusted_idx = curr_idx
-            if exact_start - whisper_asset[curr_idx]["start"] >= 0.8: break
-                
-        return round(whisper_asset[adjusted_idx]["start"], 2)
-    return 0.0
-
 # ----------------- 主流水线 -----------------
 def process_folder(folder_path, csv_info):
     folder_name = os.path.basename(folder_path)
     cf_base_url = "https://cdn.spoken-eng-planet.com" 
+    
     pure_clip_id = csv_info['clip_id']
     
     srt_files = [f for f in os.listdir(folder_path) if f.endswith('.srt')]
@@ -621,60 +518,48 @@ def process_folder(folder_path, csv_info):
         print(f"⚠️  跳过 '{folder_name}'：找不到 .srt 文件")
         return
     
-    print(f"\n🚀 开始全自动生产: {folder_name} (提取纯ID: {pure_clip_id})")
+    print(f"\n🚀 开始处理: {folder_name} (提取纯ID: {pure_clip_id})")
     
-    # ✨ 优先寻找绝对同名的目标 SRT（防止读到未校对的备份文件）
-    expected_srt = os.path.join(folder_path, f"{folder_name}.srt")
-    if os.path.exists(expected_srt):
-        srt_path = expected_srt
-    else:
-        srt_path = os.path.join(folder_path, srt_files[0])
-    mp4_path = os.path.join(src_clips_dir, folder_name + ".mp4")
-    whisper_save_path = os.path.join(folder_path, "whisper_raw.json")
-
-    # ====================================================
-    # 核心2：获取准确的 SRT 纯净文案，与 Whisper 时间轴结合
-    # ====================================================
-    whisper_asset = get_whisper_asset(mp4_path, whisper_save_path)
-    if not whisper_asset: return
-
-    subs = pysrt.open(srt_path)
-    # 读取人工矫正的纯净文案
-    raw_text = re.sub(r'\s+', ' ', " ".join([sub.text.replace('\n', ' ') for sub in subs])).strip()
-    duration_sec = subs[-1].end.ordinal / 1000.0 if subs else 0.0
-
-    # 意群断句 + 全片去重时间轴锁定
-    ds_sentences = deepseek_segment_and_translate(raw_text)
-    subtitles = align_timestamps(ds_sentences, whisper_asset)
+    # 1. 解析基础数据（拿到碎片）
+    print("  -> 解析物理 SRT 碎片...")
+    raw_subtitles, _, duration_sec = parse_srt_to_array(os.path.join(folder_path, srt_files[0]))
     
+    # 2. 调度车间 1：语义缝合与翻译
+    print("  -> [AI 车间 1] 正在按语义缝合完整句子、恢复标点并翻译...")
+    subtitles = ai_rebuild_and_translate_subtitles(raw_subtitles)
+    
+    # ✨ 把缝合好、带标点的完整英文句子拼接起来，喂给后面的知识提取车间
+    # 这样做的好处是后面的提取逻辑会因为有了正确的标点，准确率大幅提升！
     text_for_ai_array = [f"[{format_duration(s['startTime'])}] {s['en']}" for s in subtitles]
     text_for_ai = " ".join(text_for_ai_array)
     
+    # 3. 调度车间 2：知识提取
     print("  -> [AI 车间 2] 正在执行军规提取教研内容...")
+    
+    # ✨✨✨ 修改这里 ✨✨✨
+    # 从 csv_info 里安全地提取博主名字，传给 AI 函数
     creator_name = csv_info.get('creator', '这位博主') 
     ai_data = ai_extract_knowledge(text_for_ai, creator_name)
+    
     if not ai_data: return
     
-    # ====================================================
-    # 核心：调用带 Preroll 缓冲的时间戳抓取算法
-    # ====================================================
+    # ✨ 核心修复：补齐精准时间戳，传入上下文兜底
+    # ✨ 核心修复：单词、短语、金句统一使用 original_form_in_video 寻找时间戳！
     for i, item in enumerate(ai_data.get("vocabularies", [])): 
         item["id"] = f"v{i+1}"
         search_target = item.get("original_form_in_video", "") or item.get("word", "")
-        item["first_appearance_time"] = find_precise_start_time_with_preroll(search_target, whisper_asset)
+        item["first_appearance_time"] = find_exact_time(search_target, subtitles, item.get("example_from_video", ""))
         
     for i, item in enumerate(ai_data.get("phrases", [])): 
         item["id"] = f"p{i+1}"
         search_target = item.get("original_form_in_video", "") or item.get("phrase", "")
-        item["first_appearance_time"] = find_precise_start_time_with_preroll(search_target, whisper_asset)
+        item["first_appearance_time"] = find_exact_time(search_target, subtitles, item.get("context", ""))
         
     for i, item in enumerate(ai_data.get("expressions", [])): 
         item["id"] = f"e{i+1}"
         search_target = item.get("original_form_in_video", "") or item.get("expression", "")
-        item["first_appearance_time"] = find_precise_start_time_with_preroll(search_target, whisper_asset)
-    # ====================================================
-    # 5. 组装并保存 data.json
-    # ====================================================
+        item["first_appearance_time"] = find_exact_time(search_target, subtitles, item.get("expression_explanation", ""))
+    # 4. 组装终极数据
     print("  -> 正在融合 CSV 与 AI 数据...")
     final_data = {
         "id": pure_clip_id,
@@ -697,31 +582,25 @@ def process_folder(folder_path, csv_info):
     
     with open(os.path.join(folder_path, 'data.json'), 'w', encoding='utf-8') as f:
         json.dump(final_data, f, ensure_ascii=False, indent=2)
-    print(f"  ✅ {folder_name} 数据生产完毕！")
+    print(f"  ✅ {folder_name} 生产完毕！")
 
 # ... 前面代码保持不变 ...
 
 def main():
     # 1. ✨ 这里定义你想要跑的指定文件夹列表（直接粘贴我之前给你的那个列表）
-
-  ##"A115_Noa_Maria", "A198_sydney_serena", "A205_Steph_Bohrer", "A202_Loepsie", "A091_pearlieee","A023_Birta_Hlin", "A131_sarah_pan", "A176_Zeliha_Akpinar", "A135_sarah_pan", "A173_emmaxolouise", "A112_Noa_Maria",  "A179_Zeliha_Akpinar", "A209_Nil_Sani", "A169_Lydia_Violeta", "A195_sydney_serena", "A123_Life_Of_Riza", 
-  ##"A133_sarah_pan", "A134_sarah_pan", "A180_Zeliha_Akpinar", "A032_Annika", "A013_Sydney_Serena", "A177_Zeliha_Akpinar", "A132_sarah_pan", "A124_Life_Of_Riza", 
-  ##"A082_Ali_Abdaal", "A147_michelle_Choi", "A184_Maddie_Borge", "A185_Maddie_Borge", "A182_Maddie_Borge", "A010_Sydney_Serena", "A088_Hailey_Rhode_Bieber", "A121_alia_zaita", 
-  ##"A086_Hailey_Rhode_Bieber", "A113_Noa_Maria", "A130_Life_Of_Riza", "A181_Zeliha_Akpinar", "A201_Loepsie", "A197_sydney_serena", "A206_Steph_Bohrer", "A203_Loepsie", 
-  ##"A178_Zeliha_Akpinar", "A210_Nil_Sani", "A191_Maddie_Borge", "A006_jenn_im", "A011_Sydney_Serena",   "A012_Sydney_Serena", "A014_Sydney_Serena", "A015_Sydney_Serena", 
-  ##"A035_Sydney_Serena", "A038_michelle_Choi", "A046_jenn_im", "A055_Claudia_Sulewski", "A056_Claudia_Sulewski", "A062_Taylor_Bell", "A065_Taylor_Bell", "A066_Amanda_Ekstrand", 
-  ##"A067_Amanda_Ekstrand", "A068_Amanda_Ekstrand", "A070_Amanda_Ekstrand", "A073_Amanda_Ekstrand", "A074_Amanda_Ekstrand", "A075_Allison_Anderson", "A076_Allison_Anderson", "A077_Allison_Anderson", 
-  ##"A078_Allison_Anderson", "A092_pearlieee", "A093_pearlieee", "A119_Kelly_Kim", "A120_Kelly_Kim", "A127_Life_Of_Riza", "A138_sarah_pan", "A139_julia_fei", 
-  ##"A140_julia_fei", "A142_julia_fei", "A143_julia_fei",
-
     SPECIFIC_FOLDERS = [
- "A144_julia_fei", 
-  "A145_Chloe_Shih", "A146_michelle_Choi", "A158_Eve_Bennett", "A159_Eve_Bennett", 
-  "A160_Eve_Bennett", "A161_Eve_Bennett", "A164_Lydia_Violeta", "A166_Lydia_Violeta", 
-  "A168_Lydia_Violeta", "A170_Lydia_Violeta", "A171_Lydia_Violeta", "A172_Lydia_Violeta", 
-  "A186_Maddie_Borge", "A190_Maddie_Borge", "A126_Life_Of_Riza", "A137_sarah_pan", 
-  "A165_Lydia_Violeta", "A136_sarah_pan", "A110_Noa_Maria", "A107_Noa_Maria"
+ "A040_michelle_Choi", "A207_Steph_Bohrer", "A196_sydney_serena", "A194_sydney_serena", "A016_Sydney_Serena", 
+"A114_Noa_Maria", "A108_Noa_Maria", "A189_Maddie_Borge", "A039_michelle_Choi", "A020_Birta_Hlin", 
+ "A117_Noa_Maria", "A017_Birta_Hlin", "A200_Loepsie", "A021_Birta_Hlin", "A103_Karen_Napoly", 
+ "A204_Loepsie", "A150_Taylor_R", "A101_Karen_Napoly", "A116_Noa_Maria", "A037_Jonna_Jinton", 
+ "A152_Taylor_R", "A084_Hailey_Rhode_Bieber", "A087_Hailey_Rhode_Bieber", "A097_Karen_Napoly", "A085_Hailey_Rhode_Bieber", 
+"A064_Taylor_Bell", "A024_Birta_Hlin", "A054_Claudia_Sulewski", "A208_Nil_Sani", "A125_Life_Of_Riza", 
+ "A193_Maddie_Borge", "A100_Karen_Napoly", "A029_Annika", "A081_Allison_Anderson", "A080_Allison_Anderson", 
+ "A069_Amanda_Ekstrand", "A089_Hailey_Rhode_Bieber", "A183_Maddie_Borge", "A083_Hailey_Rhode_Bieber", "A175_Amy_Cheah", 
+"A141_julia_fei", "A187_Maddie_Borge", "A094_pearlieee", "A153_Taylor_R", "A192_Maddie_Borge", 
+ "A058_Hannah_Elise", "A155_Eve_Bennett", "A157_Eve_Bennett", "A167_Lydia_Violeta", "A028_Annika"
 ]
+
     
     current_work_dir = os.getcwd()
     print(f"📍 当前脚本运行路径: {current_work_dir}")

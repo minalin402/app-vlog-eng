@@ -2,6 +2,7 @@ import { config } from 'dotenv'
 import { resolve } from 'path'
 import * as fs from 'fs'
 import * as path from 'path'
+
 // 1. 暴力置顶加载环境变量 (必须在实例化 Supabase 之前执行)
 config({ path: resolve(process.cwd(), '.env.local') })
 
@@ -25,30 +26,57 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
 
 async function seedDatabase() {
   try {
-    // 3. 直接扫描生产出来的真实物理文件
+    // 3. 扫描本地真实物理文件
     const contentDir = path.resolve(process.cwd(), 'public/content')
     if (!fs.existsSync(contentDir)) {
       console.log('❌ 找不到 public/content 目录，请先运行 Python 生产数据')
       return
     }
 
-    // 暂时只处理这两个文件夹进行验证
-    const folders =  
-[
- "A040_michelle_Choi", "A207_Steph_Bohrer", "A196_sydney_serena", "A194_sydney_serena", "A016_Sydney_Serena", 
-"A114_Noa_Maria", "A108_Noa_Maria", "A189_Maddie_Borge", "A039_michelle_Choi", "A020_Birta_Hlin", 
- "A117_Noa_Maria", "A017_Birta_Hlin", "A200_Loepsie", "A021_Birta_Hlin", "A103_Karen_Napoly", 
- "A204_Loepsie", "A150_Taylor_R", "A101_Karen_Napoly", "A116_Noa_Maria", "A037_Jonna_Jinton", 
- "A152_Taylor_R", "A084_Hailey_Rhode_Bieber", "A087_Hailey_Rhode_Bieber", "A097_Karen_Napoly", "A085_Hailey_Rhode_Bieber", 
-"A064_Taylor_Bell", "A024_Birta_Hlin", "A054_Claudia_Sulewski", "A208_Nil_Sani", "A125_Life_Of_Riza", 
- "A193_Maddie_Borge", "A100_Karen_Napoly", "A029_Annika", "A081_Allison_Anderson", "A080_Allison_Anderson", 
- "A069_Amanda_Ekstrand", "A089_Hailey_Rhode_Bieber", "A183_Maddie_Borge", "A083_Hailey_Rhode_Bieber", "A175_Amy_Cheah", 
-"A141_julia_fei", "A187_Maddie_Borge", "A094_pearlieee", "A153_Taylor_R", "A192_Maddie_Borge", 
- "A058_Hannah_Elise", "A155_Eve_Bennett", "A157_Eve_Bennett", "A167_Lydia_Violeta", "A028_Annika"
+    // ==========================================
+    // 🔧 测试/全量 模式切换开关
+    // ==========================================
+    // 填写你今晚要紧急修复并测试的视频名单
+    const TEST_FOLDERS =  [
+  "A115_Noa_Maria", "A198_sydney_serena", "A205_Steph_Bohrer", "A202_Loepsie", 
+  "A091_pearlieee", "A023_Birta_Hlin", "A131_sarah_pan", "A176_Zeliha_Akpinar", 
+  "A135_sarah_pan", "A173_emmaxolouise", "A112_Noa_Maria", "A179_Zeliha_Akpinar", 
+  "A209_Nil_Sani", "A169_Lydia_Violeta", "A195_sydney_serena", "A123_Life_Of_Riza", 
+  "A133_sarah_pan", "A134_sarah_pan", "A180_Zeliha_Akpinar", "A032_Annika", 
+  "A013_Sydney_Serena", "A177_Zeliha_Akpinar", "A132_sarah_pan", "A124_Life_Of_Riza", 
+  "A082_Ali_Abdaal", "A147_michelle_Choi", "A184_Maddie_Borge", "A185_Maddie_Borge", 
+  "A182_Maddie_Borge", "A010_Sydney_Serena", "A088_Hailey_Rhode_Bieber", "A121_alia_zaita", 
+  "A086_Hailey_Rhode_Bieber", "A113_Noa_Maria", "A130_Life_Of_Riza", "A181_Zeliha_Akpinar", 
+  "A201_Loepsie", "A197_sydney_serena", "A206_Steph_Bohrer", "A203_Loepsie", 
+  "A178_Zeliha_Akpinar", "A210_Nil_Sani", "A191_Maddie_Borge", "A006_jenn_im", 
+  "A011_Sydney_Serena", "A012_Sydney_Serena", "A014_Sydney_Serena", "A015_Sydney_Serena", 
+  "A035_Sydney_Serena", "A038_michelle_Choi", "A046_jenn_im", "A055_Claudia_Sulewski", 
+  "A056_Claudia_Sulewski", "A062_Taylor_Bell", "A065_Taylor_Bell", "A066_Amanda_Ekstrand", 
+  "A067_Amanda_Ekstrand", "A068_Amanda_Ekstrand", "A070_Amanda_Ekstrand", "A073_Amanda_Ekstrand", 
+  "A074_Amanda_Ekstrand", "A075_Allison_Anderson", "A076_Allison_Anderson", "A077_Allison_Anderson", 
+  "A078_Allison_Anderson", "A092_pearlieee", "A093_pearlieee", "A119_Kelly_Kim", 
+  "A120_Kelly_Kim", "A127_Life_Of_Riza", "A138_sarah_pan", "A139_julia_fei", 
+  "A140_julia_fei", "A142_julia_fei", "A143_julia_fei", "A144_julia_fei", 
+  "A145_Chloe_Shih", "A146_michelle_Choi", "A158_Eve_Bennett", "A159_Eve_Bennett", 
+  "A160_Eve_Bennett", "A161_Eve_Bennett", "A164_Lydia_Violeta", "A166_Lydia_Violeta", 
+  "A168_Lydia_Violeta", "A170_Lydia_Violeta", "A171_Lydia_Violeta", "A172_Lydia_Violeta", 
+  "A186_Maddie_Borge", "A190_Maddie_Borge", "A126_Life_Of_Riza", "A137_sarah_pan", 
+  "A165_Lydia_Violeta", "A136_sarah_pan", "A110_Noa_Maria", "A107_Noa_Maria"
 ]
-    
-    
-    console.log(`📂 在本地找到 ${folders.length} 个指定的视频文件夹，准备开始同步...`)
+    // 💡 开关在这里：true = 只跑测试名单，false = 自动扫描目录下所有视频全量同步
+    const IS_TEST_MODE = true 
+
+    let folders: string[] = []
+    if (IS_TEST_MODE) {
+      folders = TEST_FOLDERS
+    } else {
+      // 全量模式：自动读取目录下所有 A 开头的视频文件夹
+      folders = fs.readdirSync(contentDir).filter(f => 
+        f.startsWith('A') && fs.statSync(path.join(contentDir, f)).isDirectory()
+      )
+    }
+
+    console.log(`📂 当前为 ${IS_TEST_MODE ? '【测试模式】' : '【全量模式】'}，准备开始同步 ${folders.length} 个视频文件夹...`)
 
     for (const folder of folders) {
       const jsonPath = path.join(contentDir, folder, 'data.json')
@@ -82,13 +110,28 @@ async function seedDatabase() {
           creator: mockData.creator, 
           accent: mockData.accent,
           cover_url: mockData.coverUrl,
-          original_youtube_url: mockData.original_youtube_url,  // 👈 新增这一行！
+          original_youtube_url: mockData.original_youtube_url, 
           created_at: mockData.publishDate ? new Date(mockData.publishDate).toISOString() : new Date().toISOString()
         })
 
       if (videoError) throw videoError
 
-      // --- 步骤 B：插入字幕信息 (帮你找回来了！) ---
+      // ==========================================
+      // 🚀 步骤 B：插入字幕信息 (先全量删除，再干净插入)
+      // ==========================================
+      
+      // 1. 先删光当前视频在数据库里的所有旧字幕，彻底消灭“幽灵尾巴”
+      const { error: deleteSubError } = await supabase
+        .from('subtitles')
+        .delete()
+        .eq('video_id', mockData.id)
+
+      if (deleteSubError) {
+         console.error(`  ❌ [${mockData.id}] 删除旧字幕失败:`, deleteSubError)
+         throw deleteSubError
+      }
+
+      // 2. 插入最新的一整套字幕
       if (mockData.subtitles && mockData.subtitles.length > 0) {
         const subtitlesData = mockData.subtitles.map((s: any) => ({
           id: `${mockData.id}_sub_${s.id}`, // ✨ 完美前缀
@@ -98,18 +141,21 @@ async function seedDatabase() {
           content_en: s.en || s.english || '',
           content_zh: s.zh || s.chinese || '',
         }))
-        const { error: subtitlesError } = await supabase.from('subtitles').upsert(subtitlesData)
-        if (subtitlesError) throw subtitlesError
+        const { error: insertSubError } = await supabase.from('subtitles').insert(subtitlesData)
+        if (insertSubError) throw insertSubError
+        console.log(`  ✅ [${mockData.id}] 成功重置并插入 ${subtitlesData.length} 条字幕`)
       }
 
-      // --- 步骤 C：插入教研词汇信息 (无损更新 + 精准清理) ---
+      // ==========================================
+      // 🛡️ 步骤 C：插入教研词汇信息 (无损 Upsert + 精准清理)
+      // ==========================================
       const vocabularyItems = [
         ...(mockData.vocabularies?.map((v: any) => ({
           id: `${mockData.id}_word_${v.id}`, 
           video_id: mockData.id,
           type: 'word',
           content: v.word || '',
-          original_form_in_video: v.original_form_in_video || '', // ✨ 必须加这一行
+          original_form_in_video: v.original_form_in_video || '', 
           pos: v.pos || '',  
           phonetic: v.phonetic || '',
           definition_zh: v.chinese_definition || '',
@@ -124,7 +170,7 @@ async function seedDatabase() {
           video_id: mockData.id,
           type: 'phrase',
           content: p.phrase || '',
-          original_form_in_video: p.original_form_in_video || '', // ✨ 必须加这一行
+          original_form_in_video: p.original_form_in_video || '', 
           phonetic: p.phonetic || '',
           definition_zh: p.chinese_definition || '',
           synonyms: p.synonyms || '',
@@ -138,7 +184,7 @@ async function seedDatabase() {
           video_id: mockData.id,
           type: 'expression',
           content: e.expression || '',
-          original_form_in_video: e.original_form_in_video || '', // ✨ 从 e.original_form_in_video 获取
+          original_form_in_video: e.original_form_in_video || '', 
           definition_zh: '',
           analysis: e.expression_explanation || '',
           first_appearance_time: e.first_appearance_time || 0,
@@ -146,11 +192,11 @@ async function seedDatabase() {
       ]
 
       if (vocabularyItems.length > 0) {
-        // 1. 无损更新：直接 Upsert
+        // 1. 无损更新：直接 Upsert，用户的收藏状态完全不受影响！
         const { error: vocabError } = await supabase.from('vocabulary_items').upsert(vocabularyItems)
         if (vocabError) throw vocabError
 
-        // 2. 精准除草：干掉多余的旧数据
+        // 2. 精准除草：找出被 AI 淘汰的旧知识点 ID 并删除
         const validVocabIds = vocabularyItems.map(item => item.id)
         
         const { data: existingVocabs } = await supabase
@@ -178,12 +224,7 @@ async function seedDatabase() {
         }
       }
 
-      if (vocabularyItems.length > 0) {
-        const { error: vocabError } = await supabase.from('vocabulary_items').upsert(vocabularyItems)
-        if (vocabError) throw vocabError
-      }
-
-      console.log(`  ✅ 视频大盘、字幕、教研数据均已成功入库！`)
+      console.log(`  🎉 视频大盘、字幕、教研数据均已成功入库！`)
     }
 
     console.log('\n🎉 所有本地内容已全部完美同步至 Supabase！')

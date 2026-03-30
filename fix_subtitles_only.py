@@ -9,7 +9,8 @@ base_dir = r"D:\DMy_Code_Projects\English_Factory\web_copy\engvloglab\public\con
 src_clips_dir = r"D:\DMy_Code_Projects\English_Factory\clips_project\videos\clips"
 
 # 填写你在巡检时发现的“字幕稀烂”的坏孩子名单
-BAD_IDS = ["A040_michelle_Choi", "A054_Claudia_Sulewski"] 
+BAD_IDS = ["A024_Birta_Hlin", "A054_Claudia_Sulewski","A069_Amanda_Ekstrand","A028_Annika"
+           ,"A114_Noa_Maria","A016_Sydney_Serena","A017_Birta_Hlin","A020_Birta_Hlin"] 
 # ==========================================
 
 def main():
