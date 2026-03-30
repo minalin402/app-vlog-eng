@@ -12,6 +12,7 @@ interface VocabCardsClientProps {
   phrases: PhraseItem[]
   expressions: ExpressionItem[]
   initialFavorites: string[]
+  isDemo?: boolean // ✨ 1. 新增参数
 }
 
 export function VocabCardsClient({
@@ -19,6 +20,7 @@ export function VocabCardsClient({
   phrases,
   expressions,
   initialFavorites,
+  isDemo = false // ✨ 2. 接收参数，默认 false
 }: VocabCardsClientProps) {
   const router = useRouter()
 
@@ -41,6 +43,13 @@ export function VocabCardsClient({
 
   // 切换收藏（防弹版）
   const handleToggleFavorite = async (rawId: string | number, type: "word" | "phrase" | "expression") => {
+    
+    // ✨ 物理阻断：试用版点图标直接弹窗，绝对不进数据库！
+    if (isDemo) {
+      alert("💡 试听版暂不支持保存数据，请登录体验完整版！");
+      return;
+    }
+    
     const id = String(rawId)
     
     // ✨ 直接从镜像中读取当下这一毫秒绝对真实的最新状态！

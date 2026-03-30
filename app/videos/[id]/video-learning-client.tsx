@@ -1058,6 +1058,7 @@ const rafCallback = useCallback(() => {
             onFontSizeChange={setFontSize}
             onLoopCountChange={setLoopCount}
             onAutoNextChange={setAutoNext}
+            isDemo={isDemo} // ✨ 把 isDemo 透传给手机端底部栏
           />
         </div>
       )}

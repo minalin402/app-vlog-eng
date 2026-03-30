@@ -37,6 +37,9 @@ interface MobilePlaybackBarProps {
   onFontSizeChange: (size: "small" | "medium" | "large") => void
   onLoopCountChange: (count: number) => void
   onAutoNextChange: (val: boolean) => void
+  // ✨ 新增下面这两个参数：
+  isDemo?: boolean
+  videoId?: string
 }
 
 const SPEED_OPTIONS = [0.5, 0.75, 1, 1.25, 1.5, 2]
@@ -70,6 +73,9 @@ export function MobilePlaybackBar({
   onFontSizeChange,
   onLoopCountChange,
   onAutoNextChange,
+  // ✨ 1. 在这里接收参数
+  isDemo = false,
+  videoId,
 }: MobilePlaybackBarProps) {
   const [activeSheet, setActiveSheet] = useState<SheetType>(null)
   const pathname = usePathname()
@@ -270,7 +276,7 @@ export function MobilePlaybackBar({
           </div>
           <div className="px-4 pb-4 flex flex-col gap-2">
             <Link
-              href={`${pathname}/vocab-cards`} 
+              href={isDemo ? '/demo/vocab-cards' : `/videos/${videoId}/vocab-cards`}
               onClick={closeSheet}
               className="flex items-center gap-3 w-full px-4 py-3.5 rounded-xl bg-muted/50 transition-colors hover:bg-accent"
             >
