@@ -1,8 +1,25 @@
-export default function DemoPage() {
+// app/demo/page.tsx
+import { notFound } from "next/navigation"
+import VideoLearningClient from "@/app/videos/[id]/video-learning-client"
+import { getVideoPageData } from "@/lib/video-server-api"
+
+export default async function DemoPage() {
+  const demoId = "A010"
+  const data = await getVideoPageData(demoId, 'desc') as any
+
+  if (!data || !data.videoData) return notFound()
+
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-8">
-      <h1 className="text-2xl font-bold mb-4">试看专属页面</h1>
-      <p className="text-gray-500">我们的引流视频将在这里展示...</p>
-    </div>
-  );
+    <VideoLearningClient
+      videoId={demoId}
+      initialVideoData={data.videoData}
+      initialLearningStatus={data.learningStatus?.status || 'unlearned'}
+      initialFavoriteIds={data.favoriteIds || []} 
+      prevVideoId={null} 
+      nextVideoId={null} 
+      currentSort="desc"
+      from="demo"
+      isDemo={true} // ✨ 加上这个，开启无敌防御模式
+    />
+  )
 }

@@ -35,6 +35,19 @@ export async function getVideoDataServer(videoId: string): Promise<ServerVideoDa
 
   const supabase = await createClient()
 
+
+  // ✨ 修改点：尝试获取用户，但如果不登录也不要报错崩溃
+  const { data: { user } } = await supabase.auth.getUser()
+
+  // 🔒 安全策略：如果是试用，只允许拿那几个特定的 ID
+  const DEMO_IDS = ['A010', 'A069']; 
+  const isRequestingDemo = DEMO_IDS.includes(videoId);
+
+  // 如果没登录，且请求的不是演示视频，直接拦截
+  if (!user && !isRequestingDemo) {
+    return null;
+  }
+  
   try {
     // ✨ 2. 性能巅峰：并行查询三大数据表（打破 10 秒瓶颈）
     const [

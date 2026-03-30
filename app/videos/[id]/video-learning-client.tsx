@@ -190,6 +190,7 @@ interface VideoLearningClientProps {
   nextVideoId?: string | null  // ✨ 新增
   currentSort?: string         // ✨ 新增
   from?: string // ✨ 新增
+  isDemo?: boolean // ✨ 必须加上这一行！注意有个问号，代表是可选属性
 }
 
 export default function VideoLearningClient({
@@ -201,6 +202,7 @@ export default function VideoLearningClient({
   nextVideoId,   // ✨ 接收
   currentSort,   // ✨ 接收
   from = 'home', // ✨ 接收并给默认值
+  isDemo = false // ✨ 接收参数
 }: VideoLearningClientProps) {
   const router = useRouter()
 
@@ -216,6 +218,7 @@ export default function VideoLearningClient({
   const debouncedUpdateProgress = useMemo(() => {
     let timeoutId: NodeJS.Timeout | null = null
     return (videoId: string, progress: number) => {
+      if (isDemo) return; // ✨ 物理阻断：试用版绝不同步进度
       if (timeoutId) clearTimeout(timeoutId)
       timeoutId = setTimeout(() => {
         updateLearningProgress(videoId, progress).then(() => {
@@ -223,7 +226,7 @@ export default function VideoLearningClient({
         })
       }, 10000) // 10秒防抖
     }
-  }, [])
+  }, [isDemo]) // ✨ 记得加上依赖
   
   // 初始化收藏状态
   const [favState, setFavState] = useState<Record<string, boolean>>(() => {
@@ -472,6 +475,14 @@ const rafCallback = useCallback(() => {
       // A. 99% 自动完成
       if (currentProgress >= 99 && !hasMarkedLearnedRef.current) {
         hasMarkedLearnedRef.current = true
+
+        // ✨ 物理阻断：试用版只更新 UI，不发后端请求
+        if (isDemo) {
+          setLearningStatus("learned")
+          setShowResetButton(true)
+          return; 
+        }
+
         markAsLearned(videoId, 100).then(() => {
           setLearningStatus("learned")
           setShowResetButton(true)
@@ -691,6 +702,12 @@ const rafCallback = useCallback(() => {
     })
   }, [])
   const handleToggleFavorite = async (rawId: string | number, type: "word" | "phrase" | "expression") => {
+    
+    if (isDemo) {
+      alert("💡 试听版暂不支持保存数据，请登录体验完整版！");
+      return;
+    }
+    
     const id = String(rawId)
     
     // ✨ 从镜像中同步读取最新状态
