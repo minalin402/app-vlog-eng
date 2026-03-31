@@ -21,6 +21,7 @@ export default async function Page() {
     .from('vocabulary_items')
     .select('*')
     .order('created_at', { ascending: false })
+    .limit(100000) // ✨ 显式声明
   
   // 3. 使用连表查询一次性获取用户的所有收藏
   let favoriteIds: string[] = []
