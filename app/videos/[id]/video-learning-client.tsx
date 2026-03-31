@@ -1059,6 +1059,7 @@ const rafCallback = useCallback(() => {
             onLoopCountChange={setLoopCount}
             onAutoNextChange={setAutoNext}
             isDemo={isDemo} // ✨ 把 isDemo 透传给手机端底部栏
+            videoId={videoId} // ✨ 加上这一行！！！把 videoId 透传给它
           />
         </div>
       )}
