@@ -145,7 +145,7 @@ export async function getVideoDataServer(videoId: string): Promise<ServerVideoDa
       description: video.description,
       duration: video.duration,
       difficulty: video.difficulty,
-      videoUrl: localVideoUrl || video.video_url,
+      videoUrl: video.video_url || '',
       coverUrl: video.cover_url || '',  // ✨ 新增：把数据库查到的 cover_url 传出去
       original_youtube_url: cleanYoutubeUrl,
       created_at: video.created_at, // ✨ 务必加上这行！让下面的函数能拿到时间戳
