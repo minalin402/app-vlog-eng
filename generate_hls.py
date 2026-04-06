@@ -8,10 +8,8 @@ CONTENT_DIR = "public/content"
 BACKUP_DIR = "public/backups"
 
 # 今晚做测试的文件夹
-TARGET_FOLDERS = [
-    "A095_Karen_Napoly", 
-    "A090_Hailey_Rhode_Bieber"
-]
+TARGET_FOLDERS = ["A207_Steph_Bohrer", "A194_sydney_serena", "A202_Loepsie", "A101_Karen_Napoly", "A080_Allison_Anderson",
+"A172_Lydia_Violeta", "A097_Karen_Napoly", "A112_Noa_Maria", "A087_Hailey_Rhode_Bieber"]
 
 def generate_hls_for_web():
     print(f"🚀 收到指令，准备将 {len(TARGET_FOLDERS)} 个视频升级为 HLS 流媒体架构...")

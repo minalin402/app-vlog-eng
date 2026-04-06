@@ -46,7 +46,9 @@ export function VideoPlayer({
   const [showControls, setShowControls] = useState(true)
   const [showSpeedMenu, setShowSpeedMenu] = useState(false)
   const [showVolumeSlider, setShowVolumeSlider] = useState(false)
-  
+  const [isVideoReady, setIsVideoReady] = useState(false) // 画面是否真正准备好
+  const [isBuffering, setIsBuffering] = useState(false)   // 是否正在缓冲转圈
+
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   
   // ✨ 音量状态，0 到 1 之间
@@ -85,6 +87,9 @@ export function VideoPlayer({
         const hls = new Hls({
           enableWorker: true,
           lowLatencyMode: true,
+          // --- 新增下面两行预热调优参数 ---
+          //startFragPrefetch: true,      // 强制在播放前就预取第一个分片
+          //capLevelToPlayerSize: true,   // 限制初始分辨率，加快首屏速度（如果你有多码率的话）
         })
         hls.loadSource(videoUrl)
         hls.attachMedia(video)
@@ -176,10 +181,29 @@ export function VideoPlayer({
           className="w-full h-full object-cover relative z-0"
           playsInline
           preload="auto"
+          onCanPlay={() => setIsVideoReady(true)}
+          onPlaying={() => setIsBuffering(false)}
+          onWaiting={() => setIsBuffering(true)}
           onLoadedMetadata={(e) => onDurationChange?.((e.target as HTMLVideoElement).duration)}
           onEnded={onEnded}
           onSeeked={onSeeked}
         />
+
+        {/* 1. 自定义坚不可摧的封面图层（只有当画面没准备好，或者还没开始播放且在 0 秒时才显示） */}
+        {(!isVideoReady || (!isPlaying && videoRef.current?.currentTime === 0)) && poster && (
+          <img 
+            src={poster} 
+            alt="cover" 
+            className="absolute inset-0 w-full h-full object-cover z-10 pointer-events-none" 
+          />
+        )}
+        
+        {/* 2. 缓冲时的 Loading 转圈动画（选加，体验更好） */}
+        {isPlaying && isBuffering && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/20 z-10 pointer-events-none">
+            <div className="size-8 border-4 border-white/30 border-t-white rounded-full animate-spin" />
+          </div>
+        )}
 
         {!isPlaying && (
           <button

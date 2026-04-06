@@ -3,7 +3,7 @@
 import Image from "next/image"
 import Link from "next/link"
 import { Star, Heart } from "lucide-react"
-import { useState, useCallback, useMemo } from "react"
+import { useState, useCallback, useMemo, useRef } from "react"
 import { toast } from "sonner"
 import { supabase } from "@/lib/supabase-client"
 import { cn } from "@/lib/utils"
@@ -17,6 +17,15 @@ interface VideoCardProps {
 
 export function VideoCard({ video, priority = false, sortOrder = "desc" }: VideoCardProps) {
   const [isFavorite, setIsFavorite] = useState(video.isFavorite)
+  const prewarmedRef = useRef(false) // 记录是否已经预热过，防止重复请求
+
+  // ✨ 预热终极魔法：只拉取 1KB 的 m3u8 索引，不耗流量，不花钱
+  const handlePrewarm = () => {
+    if (prewarmedRef.current || !video.video_url?.endsWith('.m3u8')) return
+    prewarmedRef.current = true
+    // ✨ 核心修改：把 no-cors 改成 cors
+    fetch(video.video_url, { mode: 'cors' }).catch(() => {})
+  }
 
   // ✨ 修复：定义 formattedDate
   const formattedDate = useMemo(() => {
@@ -44,7 +53,8 @@ export function VideoCard({ video, priority = false, sortOrder = "desc" }: Video
         // ✨ 关键修复：错误代码 23505 代表"数据已存在"。如果是这个错，我们直接放行，不抛出异常。
         if (error && error.code !== '23505') throw error
       } else {
-        const { error } = await supabase.from('user_favorites').delete().eq('user_id', user.id).eq('video_id', video.id)
+        const { error } = await supabase.from('user_favorites').delete()
+          .eq('user_id', user.id).eq('video_id', video.id)
         if (error) throw error
       }
     } catch (err) {
@@ -56,6 +66,10 @@ export function VideoCard({ video, priority = false, sortOrder = "desc" }: Video
   return (
     <Link 
       href={`/videos/${video.id}?sort=${sortOrder}&from=home`}
+      // ✨✨✨ 就在这里：加入双端预热事件 ✨✨✨
+      onMouseEnter={handlePrewarm} 
+      onTouchStart={handlePrewarm}
+      // ============================================
       className="group relative flex flex-col w-full h-full overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-all hover:shadow-md"
     >
       {/* 收藏按钮 */}
