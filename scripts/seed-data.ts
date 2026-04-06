@@ -38,30 +38,7 @@ async function seedDatabase() {
     // ==========================================
     // 填写你今晚要紧急修复并测试的视频名单
     const TEST_FOLDERS =  [
-  "A115_Noa_Maria", "A198_sydney_serena", "A205_Steph_Bohrer", "A202_Loepsie", 
-  "A091_pearlieee", "A023_Birta_Hlin", "A131_sarah_pan", "A176_Zeliha_Akpinar", 
-  "A135_sarah_pan", "A173_emmaxolouise", "A112_Noa_Maria", "A179_Zeliha_Akpinar", 
-  "A209_Nil_Sani", "A169_Lydia_Violeta", "A195_sydney_serena", "A123_Life_Of_Riza", 
-  "A133_sarah_pan", "A134_sarah_pan", "A180_Zeliha_Akpinar", "A032_Annika", 
-  "A013_Sydney_Serena", "A177_Zeliha_Akpinar", "A132_sarah_pan", "A124_Life_Of_Riza", 
-  "A082_Ali_Abdaal", "A147_michelle_Choi", "A184_Maddie_Borge", "A185_Maddie_Borge", 
-  "A182_Maddie_Borge", "A010_Sydney_Serena", "A088_Hailey_Rhode_Bieber", "A121_alia_zaita", 
-  "A086_Hailey_Rhode_Bieber", "A113_Noa_Maria", "A130_Life_Of_Riza", "A181_Zeliha_Akpinar", 
-  "A201_Loepsie", "A197_sydney_serena", "A206_Steph_Bohrer", "A203_Loepsie", 
-  "A178_Zeliha_Akpinar", "A210_Nil_Sani", "A191_Maddie_Borge", "A006_jenn_im", 
-  "A011_Sydney_Serena", "A012_Sydney_Serena", "A014_Sydney_Serena", "A015_Sydney_Serena", 
-  "A035_Sydney_Serena", "A038_michelle_Choi", "A046_jenn_im", "A055_Claudia_Sulewski", 
-  "A056_Claudia_Sulewski", "A062_Taylor_Bell", "A065_Taylor_Bell", "A066_Amanda_Ekstrand", 
-  "A067_Amanda_Ekstrand", "A068_Amanda_Ekstrand", "A070_Amanda_Ekstrand", "A073_Amanda_Ekstrand", 
-  "A074_Amanda_Ekstrand", "A075_Allison_Anderson", "A076_Allison_Anderson", "A077_Allison_Anderson", 
-  "A078_Allison_Anderson", "A092_pearlieee", "A093_pearlieee", "A119_Kelly_Kim", 
-  "A120_Kelly_Kim", "A127_Life_Of_Riza", "A138_sarah_pan", "A139_julia_fei", 
-  "A140_julia_fei", "A142_julia_fei", "A143_julia_fei", "A144_julia_fei", 
-  "A145_Chloe_Shih", "A146_michelle_Choi", "A158_Eve_Bennett", "A159_Eve_Bennett", 
-  "A160_Eve_Bennett", "A161_Eve_Bennett", "A164_Lydia_Violeta", "A166_Lydia_Violeta", 
-  "A168_Lydia_Violeta", "A170_Lydia_Violeta", "A171_Lydia_Violeta", "A172_Lydia_Violeta", 
-  "A186_Maddie_Borge", "A190_Maddie_Borge", "A126_Life_Of_Riza", "A137_sarah_pan", 
-  "A165_Lydia_Violeta", "A136_sarah_pan", "A110_Noa_Maria", "A107_Noa_Maria"
+ "A207_Steph_Bohrer"
 ]
     // 💡 开关在这里：true = 只跑测试名单，false = 自动扫描目录下所有视频全量同步
     const IS_TEST_MODE = true 

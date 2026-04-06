@@ -2,6 +2,7 @@
 
 import { useRef, useEffect, useState } from "react"
 import { Play, Pause, Volume2, VolumeX, Maximize } from "lucide-react"
+import Hls from "hls.js"
 
 interface VideoPlayerProps {
   videoRef?: React.RefObject<HTMLVideoElement | null>
@@ -40,6 +41,7 @@ export function VideoPlayer({
 }: VideoPlayerProps) {
   const internalRef = useRef<HTMLVideoElement>(null)
   const videoRef = (externalRef ?? internalRef) as React.RefObject<HTMLVideoElement>
+  const hlsRef = useRef<Hls | null>(null)
 
   const [showControls, setShowControls] = useState(true)
   const [showSpeedMenu, setShowSpeedMenu] = useState(false)
@@ -63,7 +65,47 @@ export function VideoPlayer({
   }
 
   useEffect(() => {
-    if (showControls && isPlaying && !showSpeedMenu && !showVolumeSlider) { 
+    const video = videoRef.current
+    if (!video || !videoUrl) return
+
+    // 每次 url 变化前，清理上一个实例
+    if (hlsRef.current) {
+      hlsRef.current.destroy()
+      hlsRef.current = null
+    }
+
+    // 判断是否是 HLS 流媒体 (.m3u8)
+    if (videoUrl.endsWith('.m3u8')) {
+      // 方案 A：原生支持 HLS 的浏览器（如 iOS Safari）
+      if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        video.src = videoUrl
+      }
+      // 方案 B：不支持原生，但支持 MediaSource API（如 Chrome/Edge）
+      else if (Hls.isSupported()) {
+        const hls = new Hls({
+          enableWorker: true,
+          lowLatencyMode: true,
+        })
+        hls.loadSource(videoUrl)
+        hls.attachMedia(video)
+        hlsRef.current = hls
+      }
+    } else {
+      // 兼容旧的 .mp4 视频
+      video.src = videoUrl
+    }
+
+    // 组件卸载时清理内存
+    return () => {
+      if (hlsRef.current) {
+        hlsRef.current.destroy()
+        hlsRef.current = null
+      }
+    }
+  }, [videoUrl, videoRef])
+
+  useEffect(() => {
+    if (showControls && isPlaying && !showSpeedMenu && !showVolumeSlider) {
       if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current)
       controlsTimeoutRef.current = setTimeout(() => {
         setShowControls(false)
@@ -130,7 +172,6 @@ export function VideoPlayer({
 
         <video
           ref={videoRef}
-          src={videoUrl}
           poster={poster}
           className="w-full h-full object-cover relative z-0"
           playsInline

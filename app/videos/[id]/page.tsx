@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation"
 import VideoLearningClient from "./video-learning-client"
 import { getVideoPageData } from "@/lib/video-server-api"
+// 强制动态渲染，禁用当前页面的服务端缓存
+export const dynamic = 'force-dynamic'
 
 interface PageProps {
   params: Promise<{ id: string }>
